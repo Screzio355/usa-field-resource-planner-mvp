@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>USA Field Resource Planner</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">USA Field Support</p>
+          <h1>Resource Planner MVP</h1>
+        </div>
+        <div class="actions">
+          <button id="generatePlan" class="primary">Generate plan</button>
+          <button id="resetPlan">Reset</button>
+          <button id="exportCsv">Export CSV</button>
+          <button id="printPlan">Print PDF</button>
+        </div>
+      </header>
+
+      <section class="kpi-strip" aria-label="Planner KPI">
+        <article>
+          <span id="kpiAssigned">0</span>
+          <p>Assigned tasks</p>
+        </article>
+        <article>
+          <span id="kpiUnassigned">0</span>
+          <p>Uncovered tasks</p>
+        </article>
+        <article>
+          <span id="kpiTravel">0h</span>
+          <p>Estimated travel</p>
+        </article>
+        <article>
+          <span id="kpiUtilization">0%</span>
+          <p>Average utilization</p>
+        </article>
+      </section>
+
+      <section class="intake-section" aria-label="Manual task intake">
+        <div class="intake-header">
+          <div>
+            <p class="eyebrow">Weekly Intake</p>
+            <h2>Unplanned tasks and support requests</h2>
+            <p>Add work that appears during the week without mixing it up with fixed site coverage.</p>
+          </div>
+        </div>
+        <form id="manualTaskForm" class="task-form">
+          <label>
+            Work type
+            <select id="manualTaskType" required>
+              <option value="direct_customer_issue">Direct customer issue L1/L2/L3</option>
+              <option value="partner_l2_l3_escalation">Partner escalation L2/L3</option>
+              <option value="site_coverage_gap">Site coverage gap</option>
+              <option value="onsite_urgent_l3">Urgent onsite L3</option>
+              <option value="middleware_support">Middleware support</option>
+              <option value="planned_weekly_work">Planned weekly work</option>
+            </select>
+          </label>
+          <label>
+            Site / customer
+            <select id="manualTaskSite" required></select>
+          </label>
+          <label>
+            Title
+            <input id="manualTaskTitle" type="text" placeholder="Short description" required>
+          </label>
+          <label>
+            Priority
+            <select id="manualTaskPriority" required>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+          <label>
+            Duration
+            <select id="manualTaskDuration" required>
+              <option value="60">1h</option>
+              <option value="120">2h</option>
+              <option value="180">3h</option>
+              <option value="240">4h</option>
+              <option value="480">Full day</option>
+            </select>
+          </label>
+          <label>
+            Window start
+            <input id="manualTaskStart" type="time" value="08:30" required>
+          </label>
+          <label>
+            Window end
+            <input id="manualTaskEnd" type="time" value="17:30" required>
+          </label>
+          <button type="submit" class="primary">Add task</button>
+        </form>
+        <div id="manualTaskList" class="manual-task-list"></div>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel">
+          <div class="panel-header">
+            <h2>Task intake</h2>
+            <select id="regionFilter" aria-label="Filter by region">
+              <option value="all">All regions</option>
+              <option value="Northeast">Northeast</option>
+              <option value="Midwest">Midwest</option>
+              <option value="Southeast">Southeast</option>
+              <option value="West">West</option>
+              <option value="Remote">Remote</option>
+            </select>
+          </div>
+          <div id="taskPool" class="task-list drop-zone" data-tech-id="unassigned"></div>
+        </aside>
+
+        <section class="map-area" aria-label="USA dispatch map">
+          <div class="map-toolbar">
+            <h2>Coverage map</h2>
+            <p id="conflictSummary">Generate a plan to see gaps and conflicts.</p>
+          </div>
+          <svg id="usaMap" viewBox="0 0 1000 560" role="img" aria-label="Simplified map of the United States with technician routes">
+            <rect width="1000" height="560" rx="8" fill="#f4f7f6"></rect>
+            <path d="M136 205 L204 140 L327 113 L480 119 L617 130 L755 170 L842 247 L820 340 L706 409 L566 435 L425 418 L291 372 L183 307 Z" fill="#d8e7e0" stroke="#7a9188" stroke-width="3"></path>
+            <path d="M752 406 L782 427 L774 454 L739 456 L715 436 Z" fill="#d8e7e0" stroke="#7a9188" stroke-width="3"></path>
+            <path d="M216 433 L268 455 L333 478 L392 500" fill="none" stroke="#b5c7bf" stroke-width="3" stroke-dasharray="8 10"></path>
+            <g id="routeLayer"></g>
+            <g id="siteLayer"></g>
+            <g id="techLayer"></g>
+          </svg>
+        </section>
+      </section>
+
+      <section class="planner" aria-label="Daily technician planner">
+        <div class="planner-header">
+          <div>
+            <h2>Daily plan</h2>
+            <p>Drag tasks between technicians or back to intake. Manual changes are marked.</p>
+          </div>
+          <label>
+            Planning date
+            <input id="planDate" type="date" value="2026-04-21">
+          </label>
+        </div>
+        <div id="technicianBoard" class="technician-board"></div>
+      </section>
+
+      <section class="pm-section" aria-label="Preventive maintenance tracking">
+        <div class="pm-header">
+          <div>
+            <p class="eyebrow">Preventive Maintenance</p>
+            <h2>Site PM progress</h2>
+            <p>Track PM activity completion by customer site and module family.</p>
+          </div>
+          <label>
+            Site
+            <select id="pmSiteFilter" aria-label="Select PM site"></select>
+          </label>
+        </div>
+        <div class="pm-layout">
+          <aside id="pmSiteSummary" class="pm-summary"></aside>
+          <section class="pm-detail">
+            <div id="pmModuleTabs" class="pm-tabs"></div>
+            <div id="pmActivityPanel" class="pm-activity-panel"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="pm-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
