@@ -178,8 +178,45 @@ h2 {
   display: grid;
   grid-template-columns: repeat(5, minmax(170px, 1fr));
   gap: 12px;
-  min-height: 405px;
   overflow-x: auto;
+}
+
+.coverage-board.compact {
+  margin-top: 12px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.coverage-map {
+  width: 100%;
+  height: 420px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--wash);
+}
+
+.coverage-map-icon {
+  border: 0;
+  background: transparent;
+}
+
+.coverage-map-icon span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 3px solid white;
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(23, 32, 28, 0.28);
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.leaflet-popup-content {
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+  line-height: 1.4;
 }
 
 .coverage-column {
@@ -658,6 +695,10 @@ select {
 
   .coverage-board {
     grid-template-columns: minmax(230px, 1fr);
+  }
+
+  .coverage-map {
+    height: 360px;
   }
 
   .task-form,

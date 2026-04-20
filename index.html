@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>USA Field Resource Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -118,10 +119,11 @@
 
         <section class="map-area" aria-label="Coverage overview">
           <div class="map-toolbar">
-            <h2>Coverage overview</h2>
+            <h2>Coverage map</h2>
             <p id="conflictSummary">Generate a plan to see gaps and conflicts.</p>
           </div>
-          <div id="coverageBoard" class="coverage-board"></div>
+          <div id="coverageMap" class="coverage-map"></div>
+          <div id="coverageBoard" class="coverage-board compact"></div>
         </section>
       </section>
 
@@ -162,6 +164,7 @@
     </main>
 
     <script src="pm-data.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

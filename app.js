@@ -496,6 +496,8 @@ let manualOverrides = new Set();
 let draggedTaskId = null;
 let activePmSiteId = (window.sitePmPlans && window.sitePmPlans[0] && window.sitePmPlans[0].siteId) || "";
 let activePmModule = "";
+let coverageMap = null;
+let coverageMapLayers = null;
 
 const priorityWeight = {
   critical: 4,
@@ -514,6 +516,7 @@ const els = {
   kpiUnassigned: document.querySelector("#kpiUnassigned"),
   kpiTravel: document.querySelector("#kpiTravel"),
   kpiUtilization: document.querySelector("#kpiUtilization"),
+  coverageMap: document.querySelector("#coverageMap"),
   manualTaskForm: document.querySelector("#manualTaskForm"),
   manualTaskType: document.querySelector("#manualTaskType"),
   manualTaskSite: document.querySelector("#manualTaskSite"),
@@ -894,6 +897,7 @@ function renderCoverageOverview() {
   if (!els.coverageBoard) {
     return;
   }
+  renderLeafletMap();
   const regions = ["Northeast", "Midwest", "Southeast", "West", "Remote"];
   els.coverageBoard.innerHTML = regions
     .map((region) => {
@@ -916,6 +920,82 @@ function renderCoverageOverview() {
       `;
     })
     .join("");
+}
+
+function renderLeafletMap() {
+  if (!els.coverageMap || !window.L) {
+    return;
+  }
+
+  if (!coverageMap) {
+    coverageMap = L.map(els.coverageMap, {
+      scrollWheelZoom: false,
+      zoomControl: true
+    }).setView([39.5, -98.35], 4);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(coverageMap);
+    coverageMapLayers = L.layerGroup().addTo(coverageMap);
+  }
+
+  coverageMapLayers.clearLayers();
+  const bounds = [];
+
+  technicians.forEach((tech) => {
+    const marker = L.marker([tech.lat, tech.lng], {
+      icon: createMapIcon(tech.color, "T")
+    }).bindPopup(`<strong>${tech.name}</strong><br>${tech.classification}<br>${tech.base}`);
+    marker.addTo(coverageMapLayers);
+    bounds.push([tech.lat, tech.lng]);
+  });
+
+  tasks.forEach((task) => {
+    const tech = technicians.find((item) => item.id === assignments[task.id]);
+    const color = tech ? tech.color : "#A33A32";
+    const marker = L.marker([task.lat, task.lng], {
+      icon: createMapIcon(color, tech ? "✓" : "!")
+    }).bindPopup(`
+      <strong>${task.id} - ${task.site}</strong><br>
+      ${task.city}<br>
+      ${task.intakeCategory || task.title}<br>
+      Priority: ${task.priority}<br>
+      Assigned: ${tech ? tech.name : "Unassigned"}
+    `);
+    marker.addTo(coverageMapLayers);
+    bounds.push([task.lat, task.lng]);
+
+    if (tech && !isRemoteTask(task)) {
+      L.polyline(
+        [
+          [tech.lat, tech.lng],
+          [task.lat, task.lng]
+        ],
+        {
+          color: tech.color,
+          weight: 3,
+          opacity: 0.55,
+          dashArray: "6 8"
+        }
+      ).addTo(coverageMapLayers);
+    }
+  });
+
+  if (bounds.length) {
+    coverageMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 5 });
+  }
+  setTimeout(() => coverageMap.invalidateSize(), 50);
+}
+
+function createMapIcon(color, label) {
+  return L.divIcon({
+    className: "coverage-map-icon",
+    html: `<span style="background:${color}">${label}</span>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -14]
+  });
 }
 
 function renderCoverageCard(task) {
