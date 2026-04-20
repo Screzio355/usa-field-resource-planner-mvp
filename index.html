@@ -116,20 +116,12 @@
           <div id="taskPool" class="task-list drop-zone" data-tech-id="unassigned"></div>
         </aside>
 
-        <section class="map-area" aria-label="USA dispatch map">
+        <section class="map-area" aria-label="Coverage overview">
           <div class="map-toolbar">
-            <h2>Coverage map</h2>
+            <h2>Coverage overview</h2>
             <p id="conflictSummary">Generate a plan to see gaps and conflicts.</p>
           </div>
-          <svg id="usaMap" viewBox="0 0 1000 560" role="img" aria-label="Simplified map of the United States with technician routes">
-            <rect width="1000" height="560" rx="8" fill="#f4f7f6"></rect>
-            <path d="M136 205 L204 140 L327 113 L480 119 L617 130 L755 170 L842 247 L820 340 L706 409 L566 435 L425 418 L291 372 L183 307 Z" fill="#d8e7e0" stroke="#7a9188" stroke-width="3"></path>
-            <path d="M752 406 L782 427 L774 454 L739 456 L715 436 Z" fill="#d8e7e0" stroke="#7a9188" stroke-width="3"></path>
-            <path d="M216 433 L268 455 L333 478 L392 500" fill="none" stroke="#b5c7bf" stroke-width="3" stroke-dasharray="8 10"></path>
-            <g id="routeLayer"></g>
-            <g id="siteLayer"></g>
-            <g id="techLayer"></g>
-          </svg>
+          <div id="coverageBoard" class="coverage-board"></div>
         </section>
       </section>
 

@@ -507,9 +507,7 @@ const priorityWeight = {
 const els = {
   taskPool: document.querySelector("#taskPool"),
   board: document.querySelector("#technicianBoard"),
-  routeLayer: document.querySelector("#routeLayer"),
-  siteLayer: document.querySelector("#siteLayer"),
-  techLayer: document.querySelector("#techLayer"),
+  coverageBoard: document.querySelector("#coverageBoard"),
   regionFilter: document.querySelector("#regionFilter"),
   conflictSummary: document.querySelector("#conflictSummary"),
   kpiAssigned: document.querySelector("#kpiAssigned"),
@@ -638,7 +636,7 @@ function render() {
   renderTaskPool();
   renderManualTaskList();
   renderBoard();
-  renderMap();
+  renderCoverageOverview();
   renderKpis();
   renderPmSection();
   bindDropZones();
@@ -892,53 +890,48 @@ function renderTaskCard(task) {
   `;
 }
 
-function renderMap() {
-  els.routeLayer.innerHTML = "";
-  els.techLayer.innerHTML = "";
-  els.siteLayer.innerHTML = "";
-
-  technicians.forEach((tech) => {
-    const point = project(tech.lat, tech.lng);
-    els.techLayer.insertAdjacentHTML(
-      "beforeend",
-      `<circle cx="${point.x}" cy="${point.y}" r="12" fill="${tech.color}" stroke="white" stroke-width="4"></circle>
-       <text x="${point.x + 16}" y="${point.y + 8}" class="marker-label" fill="${tech.color}">${tech.name.split(" ")[0]}</text>`
-    );
-
-    getTechTasks(tech.id).forEach((task) => {
-      const destination = project(task.lat, task.lng);
-      els.routeLayer.insertAdjacentHTML(
-        "beforeend",
-        `<path class="route" d="M ${point.x} ${point.y} Q ${(point.x + destination.x) / 2} ${Math.min(point.y, destination.y) - 42} ${destination.x} ${destination.y}" stroke="${tech.color}"></path>`
-      );
-    });
-  });
-
-  tasks.forEach((task) => {
-    const point = project(task.lat, task.lng);
-    const assignedTech = technicians.find((tech) => tech.id === assignments[task.id]);
-    const fill = assignedTech ? assignedTech.color : "#6f7773";
-    els.siteLayer.insertAdjacentHTML(
-      "beforeend",
-      `<rect x="${point.x - 8}" y="${point.y - 8}" width="16" height="16" rx="4" fill="${fill}" stroke="white" stroke-width="3"></rect>
-       <text x="${point.x + 13}" y="${point.y + 7}" class="marker-label" fill="${fill}">${shortTaskLabel(task.id)}</text>`
-    );
-  });
+function renderCoverageOverview() {
+  if (!els.coverageBoard) {
+    return;
+  }
+  const regions = ["Northeast", "Midwest", "Southeast", "West", "Remote"];
+  els.coverageBoard.innerHTML = regions
+    .map((region) => {
+      const regionTasks = tasks.filter((task) => task.region === region);
+      const assignedCount = regionTasks.filter((task) => assignments[task.id]).length;
+      const uncoveredCount = regionTasks.length - assignedCount;
+      const cards = regionTasks.map(renderCoverageCard).join("");
+      return `
+        <article class="coverage-column">
+          <div class="coverage-column-header">
+            <h3>${region}</h3>
+            <span>${assignedCount}/${regionTasks.length} assigned</span>
+          </div>
+          <div class="coverage-meter">
+            <div class="coverage-meter-fill" style="width: ${regionTasks.length ? Math.round((assignedCount / regionTasks.length) * 100) : 0}%"></div>
+          </div>
+          <p class="${uncoveredCount ? "coverage-warning" : "coverage-ok"}">${uncoveredCount ? `${uncoveredCount} uncovered` : "fully covered"}</p>
+          <div class="coverage-card-list">${cards || `<div class="empty-state">No tasks in this region.</div>`}</div>
+        </article>
+      `;
+    })
+    .join("");
 }
 
-function shortTaskLabel(taskId) {
-  return taskId.split("-").pop();
-}
-
-function project(lat, lng) {
-  const minLng = -125;
-  const maxLng = -66;
-  const minLat = 24;
-  const maxLat = 50;
-  return {
-    x: ((lng - minLng) / (maxLng - minLng)) * 760 + 120,
-    y: 445 - ((lat - minLat) / (maxLat - minLat)) * 310
-  };
+function renderCoverageCard(task) {
+  const tech = technicians.find((item) => item.id === assignments[task.id]);
+  const priorityClass = task.priority === "critical" ? "red" : task.priority === "high" ? "amber" : task.priority === "medium" ? "blue" : "green";
+  const statusClass = tech ? "coverage-card assigned" : "coverage-card uncovered";
+  return `
+    <article class="${statusClass}">
+      <div class="coverage-card-top">
+        <strong>${task.id}</strong>
+        <span class="badge ${priorityClass}">${task.priority}</span>
+      </div>
+      <p>${task.site}<br>${task.intakeCategory || task.title}</p>
+      <div class="coverage-assignee">${tech ? tech.name : "Unassigned"}</div>
+    </article>
+  `;
 }
 
 function renderKpis() {
