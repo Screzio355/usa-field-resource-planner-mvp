@@ -4,7 +4,7 @@ const STORAGE_KEYS = {
   manualTasks: "fieldOps.manualTasks",
   customRegions: "fieldOps.customRegions",
   customSkills: "fieldOps.customSkills",
-  activeTab: "fieldOps.activeTab"
+  activeView: "fieldOps.activeView"
 };
 
 const defaultTechnicians = [
@@ -468,9 +468,99 @@ const defaultBaselineTasks = [
   }
 ];
 
-const baseRegions = ["Northeast", "Midwest", "Southeast", "West", "Remote"];
+const defaultScenarioTasks = [
+  {
+    id: "DEMO-001",
+    title: "Direct Client NY-01 urgent L3 analyzer intervention",
+    siteId: "direct-client-ny-01",
+    priority: "critical",
+    duration: 240,
+    windowStart: "10:00",
+    windowEnd: "16:00",
+    skill: "URGENT_ONSITE",
+    sla: "Direct client urgent escalation",
+    type: "field_escalation",
+    contract: "direct",
+    source: "scenario",
+    intakeCategory: "Unexpected direct customer support",
+    preferredTechIds: ["senior-fse-midwest", "senior-fse-southeast"]
+  },
+  {
+    id: "DEMO-002",
+    title: "Direct Client NY-02 daytime backup gap",
+    siteId: "direct-client-ny-02",
+    priority: "high",
+    duration: 420,
+    windowStart: "09:00",
+    windowEnd: "16:00",
+    skill: "DIRECT_SITE_COVERAGE",
+    sla: "Backfill coverage request",
+    type: "direct_site",
+    contract: "direct",
+    source: "scenario",
+    intakeCategory: "Coverage gap",
+    preferredTechIds: ["ose-northeast-03", "ose-northeast-02"],
+    hardEligibleTechIds: ["ose-northeast-03", "ose-northeast-02"]
+  },
+  {
+    id: "DEMO-003",
+    title: "Partner TN ticket burst from Salesforce",
+    siteId: "partner-southeast-01",
+    priority: "high",
+    duration: 240,
+    windowStart: "08:30",
+    windowEnd: "17:30",
+    skill: "PARTNER_ESCALATION",
+    sla: "Partner backlog support",
+    type: "partner_escalation",
+    contract: "partner",
+    serviceMode: "remote",
+    source: "scenario",
+    intakeCategory: "Partner L2/L3 escalation",
+    preferredTechIds: ["senior-fse-southeast", "senior-fse-midwest", "technical-leader-midwest"],
+    hardEligibleTechIds: ["senior-fse-southeast", "senior-fse-midwest", "technical-leader-midwest"]
+  },
+  {
+    id: "DEMO-004",
+    title: "Middleware interface validation request",
+    siteId: "remote-middleware",
+    priority: "medium",
+    duration: 180,
+    windowStart: "09:00",
+    windowEnd: "15:00",
+    skill: "MIDDLEWARE",
+    sla: "Same week middleware follow-up",
+    type: "remote_support",
+    contract: "internal",
+    serviceMode: "remote",
+    source: "scenario",
+    intakeCategory: "Middleware support",
+    preferredTechIds: ["senior-middleware-sw-01", "middleware-sw-02", "middleware-sw-03"],
+    hardEligibleTechIds: ["senior-middleware-sw-01", "middleware-sw-02", "middleware-sw-03"]
+  }
+];
 
+const baseRegions = ["Northeast", "Midwest", "Southeast", "West", "Remote"];
 const priorityWeight = { critical: 4, high: 3, medium: 2, low: 1 };
+const viewMeta = {
+  dashboard: {
+    title: "Dashboard",
+    subtitle: "Live service coverage, intake pressure, and dispatch status at a glance."
+  },
+  planner: {
+    title: "Planner",
+    subtitle: "Daily planning, manual task intake, dispatch map, and detailed technician load."
+  },
+  atlas: {
+    title: "Atlas",
+    subtitle: "Master data for resources, sites, skills, and regions."
+  },
+  pm: {
+    title: "PM Ops",
+    subtitle: "Preventive maintenance progress by site and module family."
+  }
+};
+
 const mapInstances = {};
 
 const els = {
@@ -478,17 +568,22 @@ const els = {
   resetPlan: document.querySelector("#resetPlan"),
   exportCsv: document.querySelector("#exportCsv"),
   printPlan: document.querySelector("#printPlan"),
+  viewTitle: document.querySelector("#viewTitle"),
+  viewSubtitle: document.querySelector("#viewSubtitle"),
+  heroStats: document.querySelector("#heroStats"),
   kpiAssigned: document.querySelector("#kpiAssigned"),
   kpiUnassigned: document.querySelector("#kpiUnassigned"),
   kpiTravel: document.querySelector("#kpiTravel"),
   kpiUtilization: document.querySelector("#kpiUtilization"),
   conflictSummary: document.querySelector("#conflictSummary"),
   dashboardCoverageMap: document.querySelector("#dashboardCoverageMap"),
+  dashboardStats: document.querySelector("#dashboardStats"),
   dashboardTaskList: document.querySelector("#dashboardTaskList"),
   dashboardMiniPlan: document.querySelector("#dashboardMiniPlan"),
-  tabButtons: [...document.querySelectorAll(".tab-button")],
-  tabTargetButtons: [...document.querySelectorAll("[data-tab-target]")],
-  tabPanels: [...document.querySelectorAll("[data-tab-panel]")],
+  dashboardContractMix: document.querySelector("#dashboardContractMix"),
+  navButtons: [...document.querySelectorAll(".nav-button")],
+  goViewButtons: [...document.querySelectorAll("[data-go-view]")],
+  viewPanels: [...document.querySelectorAll("[data-view-panel]")],
   taskPool: document.querySelector("#taskPool"),
   plannerCoverageMap: document.querySelector("#plannerCoverageMap"),
   coverageBoard: document.querySelector("#coverageBoard"),
@@ -528,7 +623,7 @@ const state = {
   manualOverrides: new Set(),
   customRegions: [],
   customSkills: [],
-  activeTab: loadJson(STORAGE_KEYS.activeTab, "planner"),
+  activeView: loadJson(STORAGE_KEYS.activeView, "dashboard"),
   activePmSiteId: (window.sitePmPlans && window.sitePmPlans[0] && window.sitePmPlans[0].siteId) || "",
   activePmModule: ""
 };
@@ -538,7 +633,7 @@ bootstrap();
 function bootstrap() {
   hydrateState();
   bindEvents();
-  setActiveTab(state.activeTab);
+  setActiveView(state.activeView);
   generatePlan();
 }
 
@@ -548,7 +643,11 @@ function hydrateState() {
   state.technicians = [...defaultTechnicians, ...loadJson(STORAGE_KEYS.customResources, [])];
   state.sites = [...defaultSites, ...loadJson(STORAGE_KEYS.customSites, [])];
   state.manualTasks = loadJson(STORAGE_KEYS.manualTasks, []);
-  state.tasks = [...buildBaselineTasks(), ...state.manualTasks];
+  state.tasks = [...buildSeedTasks(), ...state.manualTasks];
+}
+
+function buildSeedTasks() {
+  return [...defaultBaselineTasks, ...defaultScenarioTasks].map((task) => enrichTask(task));
 }
 
 function bindEvents() {
@@ -556,7 +655,11 @@ function bindEvents() {
   els.resetPlan.addEventListener("click", resetPlan);
   els.exportCsv.addEventListener("click", exportCsv);
   els.printPlan.addEventListener("click", () => window.print());
-  els.regionFilter.addEventListener("change", renderTaskPool);
+  els.regionFilter.addEventListener("change", () => {
+    renderTaskPool();
+    renderCoverageOverview();
+    renderMapForView("planner");
+  });
   els.manualTaskForm.addEventListener("submit", addManualTask);
   els.manualTaskType.addEventListener("change", updateManualTaskDefaults);
   els.resourceForm.addEventListener("submit", addCustomResource);
@@ -568,16 +671,83 @@ function bindEvents() {
     state.activePmModule = "";
     renderPmSection();
   });
-  els.tabButtons.forEach((button) => {
-    button.addEventListener("click", () => setActiveTab(button.dataset.tab));
-  });
-  els.tabTargetButtons.forEach((button) => {
-    button.addEventListener("click", () => setActiveTab(button.dataset.tabTarget));
-  });
+  els.navButtons.forEach((button) => button.addEventListener("click", () => setActiveView(button.dataset.view)));
+  els.goViewButtons.forEach((button) => button.addEventListener("click", () => setActiveView(button.dataset.goView)));
 }
 
-function buildBaselineTasks() {
-  return defaultBaselineTasks.map((task) => enrichTask(task));
+function setActiveView(viewName) {
+  const safeView = viewMeta[viewName] ? viewName : "dashboard";
+  state.activeView = safeView;
+  localStorage.setItem(STORAGE_KEYS.activeView, JSON.stringify(safeView));
+
+  els.navButtons.forEach((button) => button.classList.toggle("active", button.dataset.view === safeView));
+  els.viewPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.viewPanel === safeView));
+
+  els.viewTitle.textContent = viewMeta[safeView].title;
+  els.viewSubtitle.textContent = viewMeta[safeView].subtitle;
+
+  setTimeout(() => {
+    if (safeView === "dashboard") renderMapForView("dashboard");
+    if (safeView === "planner") renderMapForView("planner");
+  }, 120);
+}
+
+function generatePlan() {
+  state.assignments = {};
+  state.manualOverrides = new Set();
+  const sortedTasks = [...state.tasks].sort((a, b) => {
+    const priorityDiff = priorityWeight[b.priority] - priorityWeight[a.priority];
+    if (priorityDiff !== 0) return priorityDiff;
+    return a.windowStart.localeCompare(b.windowStart);
+  });
+
+  sortedTasks.forEach((task) => {
+    const rankedCandidates = state.technicians
+      .map((tech) => scoreAssignment(task, tech))
+      .filter((candidate) => candidate.valid)
+      .sort((a, b) => b.score - a.score);
+
+    if (rankedCandidates[0]) {
+      state.assignments[task.id] = rankedCandidates[0].tech.id;
+    }
+  });
+
+  render();
+}
+
+function resetPlan() {
+  state.assignments = {};
+  state.manualOverrides = new Set();
+  render();
+}
+
+function scoreAssignment(task, tech) {
+  if (task.hardEligibleTechIds && !task.hardEligibleTechIds.includes(tech.id)) {
+    return { valid: false, score: -999, tech };
+  }
+
+  if (!tech.skills.includes(task.skill)) {
+    return { valid: false, score: -999, tech };
+  }
+
+  const currentLoad = getTechTasks(tech.id).reduce((sum, item) => sum + item.duration, 0);
+  const travel = isRemoteTask(task) ? 0 : estimateTravelMinutes(tech, task);
+  const projectedMinutes = currentLoad + task.duration + travel;
+  const maxMinutes = tech.maxHours * 60 + tech.maxTravel;
+
+  if (projectedMinutes > maxMinutes) {
+    return { valid: false, score: -999, tech };
+  }
+
+  const regionBonus = task.region === tech.region || task.region === "Remote" ? 80 : 0;
+  const preferredBonus = task.preferredTechIds && task.preferredTechIds.includes(tech.id) ? 180 : 0;
+  const directSiteBonus = task.contract === "direct" && tech.classification.includes("OSE") ? 120 : 0;
+  const travelPenalty = travel * 0.8;
+  const priorityBonus = priorityWeight[task.priority] * 35;
+  const loadPenalty = currentLoad * 0.25;
+
+  const score = 500 + regionBonus + preferredBonus + directSiteBonus + priorityBonus - travelPenalty - loadPenalty;
+  return { valid: true, score, tech, travel };
 }
 
 function enrichTask(task) {
@@ -594,66 +764,6 @@ function enrichTask(task) {
     lng: site ? site.lng : task.lng,
     preferredTechIds: task.preferredTechIds || (site ? site.preferredTechIds : []) || []
   };
-}
-
-function setActiveTab(tabName) {
-  state.activeTab = tabName;
-  localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tabName));
-  els.tabButtons.forEach((button) => button.classList.toggle("active", button.dataset.tab === tabName));
-  els.tabPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.tabPanel === tabName));
-  if (tabName === "planner") {
-    setTimeout(() => invalidateMap("plannerCoverageMap"), 50);
-  }
-}
-
-function generatePlan() {
-  state.assignments = {};
-  state.manualOverrides = new Set();
-  const sortedTasks = [...state.tasks].sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
-  sortedTasks.forEach((task) => {
-    const ranked = state.technicians
-      .map((tech) => scoreAssignment(task, tech))
-      .filter((candidate) => candidate.valid)
-      .sort((a, b) => b.score - a.score);
-    if (ranked[0]) {
-      state.assignments[task.id] = ranked[0].tech.id;
-    }
-  });
-  render();
-}
-
-function resetPlan() {
-  state.assignments = {};
-  state.manualOverrides = new Set();
-  render();
-}
-
-function scoreAssignment(task, tech) {
-  if (task.hardEligibleTechIds && !task.hardEligibleTechIds.includes(tech.id)) {
-    return { valid: false, score: -999, tech };
-  }
-
-  const hasSkill = tech.skills.includes(task.skill);
-  if (!hasSkill) {
-    return { valid: false, score: -999, tech };
-  }
-
-  const currentLoad = getTechTasks(tech.id).reduce((sum, item) => sum + item.duration, 0);
-  const travel = isRemoteTask(task) ? 0 : estimateTravelMinutes(tech, task);
-  const projectedMinutes = currentLoad + task.duration + travel;
-  const maxMinutes = tech.maxHours * 60 + tech.maxTravel;
-  if (projectedMinutes > maxMinutes) {
-    return { valid: false, score: -999, tech };
-  }
-
-  const regionBonus = task.region === tech.region || task.region === "Remote" ? 80 : 0;
-  const preferredBonus = task.preferredTechIds && task.preferredTechIds.includes(tech.id) ? 180 : 0;
-  const directSiteBonus = task.contract === "direct" && tech.classification.includes("OSE") ? 120 : 0;
-  const travelPenalty = travel * 0.8;
-  const priorityBonus = priorityWeight[task.priority] * 35;
-  const loadPenalty = currentLoad * 0.25;
-  const score = 500 + regionBonus + preferredBonus + directSiteBonus + priorityBonus - travelPenalty - loadPenalty;
-  return { valid: true, score, tech, travel };
 }
 
 function isRemoteTask(task) {
@@ -689,7 +799,9 @@ function getUnassignedTasks() {
 }
 
 function render() {
+  state.tasks = [...buildSeedTasks(), ...state.manualTasks];
   populateSelects();
+  renderHeroStats();
   renderDashboard();
   renderTaskPool();
   renderManualTaskList();
@@ -699,6 +811,7 @@ function render() {
   renderKpis();
   renderPmSection();
   bindDropZones();
+  renderMapForView(state.activeView);
 }
 
 function populateSelects() {
@@ -708,61 +821,181 @@ function populateSelects() {
   const selectedSiteRegion = els.siteRegion.value;
   const regions = getRegions();
   const sites = state.sites;
-  const siteOptions = sites.map((site) => `<option value="${site.id}">${site.label}</option>`).join("");
-  const regionOptions = ['<option value="all">All regions</option>', ...regions.map((region) => `<option value="${region}">${region}</option>`)].join("");
-  els.regionFilter.innerHTML = regionOptions;
-  els.manualTaskSite.innerHTML = siteOptions;
-  const regionSelectOptions = regions.map((region) => `<option value="${region}">${region}</option>`).join("");
-  els.resourceRegion.innerHTML = regionSelectOptions;
-  els.siteRegion.innerHTML = regionSelectOptions;
+
+  els.regionFilter.innerHTML = ['<option value="all">All regions</option>', ...regions.map((region) => `<option value="${region}">${region}</option>`)].join("");
+  els.manualTaskSite.innerHTML = sites.map((site) => `<option value="${site.id}">${site.label}</option>`).join("");
+  els.resourceRegion.innerHTML = regions.map((region) => `<option value="${region}">${region}</option>`).join("");
+  els.siteRegion.innerHTML = regions.map((region) => `<option value="${region}">${region}</option>`).join("");
+
   els.regionFilter.value = regions.includes(selectedRegion) || selectedRegion === "all" ? selectedRegion : "all";
   if (sites.some((site) => site.id === selectedManualSite)) els.manualTaskSite.value = selectedManualSite;
   if (regions.includes(selectedResourceRegion)) els.resourceRegion.value = selectedResourceRegion;
   if (regions.includes(selectedSiteRegion)) els.siteRegion.value = selectedSiteRegion;
+
   updateManualTaskDefaults();
 }
 
+function renderHeroStats() {
+  const directSites = state.sites.filter((site) => site.contract === "direct").length;
+  const partnerSites = state.sites.filter((site) => site.contract === "partner").length;
+  const pmSites = getPmSites().filter((site) => (site.modules || []).length).length;
+  const manualIntake = state.manualTasks.length;
+
+  els.heroStats.innerHTML = [
+    `${state.technicians.length} resources`,
+    `${state.sites.length} sites`,
+    `${directSites} direct sites`,
+    `${partnerSites} partner sites`,
+    `${pmSites} PM tracked`,
+    `${manualIntake} manual intake`
+  ].map((item) => `<span>${item}</span>`).join("");
+}
+
 function renderDashboard() {
-  renderMapInstance("dashboardCoverageMap", { compact: false });
-  const uncovered = [...getUnassignedTasks()].sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]).slice(0, 6);
-  els.dashboardTaskList.innerHTML = uncovered.length
-    ? uncovered.map((task) => miniTaskMarkup(task)).join("")
-    : '<div class="empty-state">No open gaps. Nice rare moment.</div>';
+  renderMapInstance("dashboardCoverageMap", state.tasks);
+
+  const directSites = state.sites.filter((site) => site.contract === "direct").length;
+  const partnerSites = state.sites.filter((site) => site.contract === "partner").length;
+  const onsiteRoles = state.technicians.filter((tech) => tech.classification.includes("OSE")).length;
+  const pmTracked = getPmSites().filter((site) => (site.modules || []).length).length;
+
+  els.dashboardStats.innerHTML = [
+    { label: "Resources", value: state.technicians.length },
+    { label: "Sites", value: state.sites.length },
+    { label: "Direct sites", value: directSites },
+    { label: "Partner sites", value: partnerSites },
+    { label: "Onsite roles", value: onsiteRoles },
+    { label: "PM tracked", value: pmTracked }
+  ]
+    .map((stat) => `<article class="stats-tile"><strong>${stat.label}</strong><span>${stat.value}</span></article>`)
+    .join("");
+
+  const pressureItems = buildPressureItems();
+  els.dashboardTaskList.innerHTML = pressureItems.length
+    ? pressureItems.map((item) => renderMiniCard(item.title, item.detail, item.meta, item.badge, item.badgeTone)).join("")
+    : '<div class="empty-state">No open gaps right now.</div>';
 
   const ranked = state.technicians
     .map((tech) => {
       const tasks = getTechTasks(tech.id);
       const workMinutes = tasks.reduce((sum, task) => sum + task.duration, 0);
       const utilization = Math.min(100, Math.round((workMinutes / (tech.maxHours * 60)) * 100));
-      return { tech, tasks, utilization, workMinutes };
+      return { tech, tasks, workMinutes, utilization };
     })
     .sort((a, b) => b.utilization - a.utilization)
     .slice(0, 6);
 
   els.dashboardMiniPlan.innerHTML = ranked
-    .map(
-      ({ tech, utilization, tasks }) => `
+    .map(({ tech, tasks, workMinutes, utilization }) => {
+      const tone = utilization >= 90 ? "red" : utilization >= 70 ? "amber" : "green";
+      return `
         <article class="mini-card">
           <div class="mini-card-top">
             <strong>${tech.name}</strong>
-            <span class="badge ${utilization >= 90 ? "red" : utilization >= 70 ? "amber" : "green"}">${utilization}%</span>
+            <span class="badge ${tone}">${utilization}%</span>
           </div>
-          <p>${tech.classification} - ${tech.region}</p>
+          <p>${tech.classification}<br>${tech.region}</p>
           <div class="mini-progress"><div class="mini-progress-fill" style="width:${utilization}%"></div></div>
           <div class="mini-metric">
             <span>${minutesToHours(workMinutes)} work</span>
             <span>${tasks.length} tasks</span>
           </div>
         </article>
-      `
-    )
+      `;
+    })
     .join("");
+
+  const contractMix = [
+    {
+      label: "Direct coverage",
+      value: state.tasks.filter((task) => task.contract === "direct").length,
+      detail: "Dedicated sites, direct issues, and onsite responsibility"
+    },
+    {
+      label: "Partner escalation",
+      value: state.tasks.filter((task) => task.contract === "partner").length,
+      detail: "L2/L3 queue from partner contracts"
+    },
+    {
+      label: "Remote middleware",
+      value: state.tasks.filter((task) => task.skill === "MIDDLEWARE").length,
+      detail: "Remote middleware support and validation"
+    },
+    {
+      label: "Manual intake",
+      value: state.manualTasks.length,
+      detail: "Unexpected work added by the team"
+    }
+  ];
+
+  els.dashboardContractMix.innerHTML = contractMix
+    .map((item) => `<article class="mix-card"><div><strong>${item.label}</strong><p>${item.detail}</p></div><span>${item.value}</span></article>`)
+    .join("");
+}
+
+function buildPressureItems() {
+  const items = [];
+
+  getUnassignedTasks()
+    .sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority])
+    .slice(0, 3)
+    .forEach((task) => {
+      items.push({
+        title: task.id,
+        detail: `${task.site} - ${task.intakeCategory || task.title}`,
+        meta: `${task.windowStart}-${task.windowEnd}`,
+        badge: "Unassigned",
+        badgeTone: "red"
+      });
+    });
+
+  state.technicians.forEach((tech) => {
+    const travelMinutes = getTechTasks(tech.id).reduce((sum, task) => sum + (isRemoteTask(task) ? 0 : estimateTravelMinutes(tech, task)), 0);
+    if (travelMinutes > tech.maxTravel) {
+      items.push({
+        title: tech.name,
+        detail: "Travel limit exceeded",
+        meta: `${minutesToHours(travelMinutes)} travel`,
+        badge: "Travel risk",
+        badgeTone: "amber"
+      });
+    }
+  });
+
+  if (items.length < 4) {
+    state.manualTasks.slice(0, 4 - items.length).forEach((task) => {
+      items.push({
+        title: task.id,
+        detail: `${task.site} - ${task.intakeCategory || task.title}`,
+        meta: "Manual intake",
+        badge: capitalize(task.priority),
+        badgeTone: task.priority === "critical" ? "red" : task.priority === "high" ? "amber" : "blue"
+      });
+    });
+  }
+
+  return items;
+}
+
+function renderMiniCard(title, detail, meta, badge, badgeTone) {
+  return `
+    <article class="mini-card">
+      <div class="mini-card-top">
+        <strong>${title}</strong>
+        <span class="badge ${badgeTone || ""}">${badge}</span>
+      </div>
+      <p>${detail}</p>
+      <div class="mini-metric"><span>${meta}</span></div>
+    </article>
+  `;
 }
 
 function renderTaskPool() {
   const selectedRegion = els.regionFilter.value;
   const visibleTasks = getUnassignedTasks().filter((task) => selectedRegion === "all" || task.region === selectedRegion);
-  els.taskPool.innerHTML = visibleTasks.length ? visibleTasks.map(renderTaskCard).join("") : '<div class="empty-state">No tasks in the current queue.</div>';
+  els.taskPool.innerHTML = visibleTasks.length
+    ? visibleTasks.map(renderTaskCard).join("")
+    : '<div class="empty-state">No tasks in the current queue for this region.</div>';
 }
 
 function renderManualTaskList() {
@@ -772,7 +1005,10 @@ function renderManualTaskList() {
         .map(
           (task) => `
             <article class="manual-task-row">
-              <p><strong>${task.id} - ${task.title}</strong><br>${task.intakeCategory} - ${task.site}, ${task.city} - ${task.priority} - ${task.windowStart}-${task.windowEnd}</p>
+              <div>
+                <strong>${task.id} - ${task.title}</strong>
+                <p>${task.intakeCategory} - ${task.site}, ${task.city} - ${capitalize(task.priority)} - ${task.windowStart}-${task.windowEnd}</p>
+              </div>
               <button class="danger" type="button" data-remove-task="${task.id}">Remove</button>
             </article>
           `
@@ -811,23 +1047,19 @@ function renderBoard() {
 
 function renderTaskCard(task) {
   const manual = state.manualOverrides.has(task.id) ? '<span class="badge green">Manual</span>' : "";
-  const badgeColor = task.priority === "critical" ? "red" : task.priority === "high" ? "amber" : task.priority === "medium" ? "blue" : "green";
-  const preferred = task.preferredTechIds ? `<span class="badge green">${task.preferredTechIds.length} preferred</span>` : "";
-  const source = task.source === "manual" ? '<span class="badge amber">Unplanned</span>' : '<span class="badge">Baseline</span>';
-  const category = task.intakeCategory ? `<span class="badge blue">${task.intakeCategory}</span>` : "";
+  const sourceTone = task.source === "manual" ? "amber" : task.source === "scenario" ? "blue" : "";
+  const priorityTone = task.priority === "critical" ? "red" : task.priority === "high" ? "amber" : task.priority === "medium" ? "blue" : "green";
   return `
     <article class="task-card ${task.priority}" draggable="true" data-task-id="${task.id}">
       <h3>${task.id} - ${task.title}</h3>
       <p>${task.site}<br>${task.city} - ${task.windowStart}-${task.windowEnd}</p>
       <div class="badges">
-        <span class="badge ${badgeColor}">${task.priority}</span>
+        <span class="badge ${priorityTone}">${capitalize(task.priority)}</span>
         <span class="badge">${task.skill}</span>
         <span class="badge">${task.contract}</span>
-        ${source}
-        ${category}
+        <span class="badge ${sourceTone}">${capitalize(task.source)}</span>
+        ${task.intakeCategory ? `<span class="badge blue">${task.intakeCategory}</span>` : ""}
         <span class="badge">${task.duration} min</span>
-        <span class="badge">${task.sla}</span>
-        ${preferred}
         ${manual}
       </div>
     </article>
@@ -835,26 +1067,24 @@ function renderTaskCard(task) {
 }
 
 function renderCoverageOverview() {
-  renderMapInstance("plannerCoverageMap", { compact: false });
-  const regions = getRegions();
+  const selectedRegion = els.regionFilter.value;
+  const regions = getRegions().filter((region) => selectedRegion === "all" || region === selectedRegion);
+
   els.coverageBoard.innerHTML = regions
     .map((region) => {
       const regionTasks = state.tasks.filter((task) => task.region === region);
       const assignedCount = regionTasks.filter((task) => state.assignments[task.id]).length;
       const uncoveredCount = regionTasks.length - assignedCount;
+      const coveragePercent = regionTasks.length ? Math.round((assignedCount / regionTasks.length) * 100) : 0;
       return `
         <article class="coverage-column">
           <div class="coverage-column-header">
             <h3>${region}</h3>
             <span>${assignedCount}/${regionTasks.length || 0} assigned</span>
           </div>
-          <div class="coverage-meter">
-            <div class="coverage-meter-fill" style="width:${regionTasks.length ? Math.round((assignedCount / regionTasks.length) * 100) : 0}%"></div>
-          </div>
+          <div class="coverage-meter"><div class="coverage-meter-fill" style="width:${coveragePercent}%"></div></div>
           <p class="${uncoveredCount ? "coverage-warning" : "coverage-ok"}">${regionTasks.length ? (uncoveredCount ? `${uncoveredCount} uncovered` : "fully covered") : "no tasks"}</p>
-          <div class="coverage-card-list">
-            ${regionTasks.map(renderCoverageCard).join("") || '<div class="empty-state">No work in this region.</div>'}
-          </div>
+          <div class="coverage-card-list">${regionTasks.map(renderCoverageCard).join("") || '<div class="empty-state">No work in this region.</div>'}</div>
         </article>
       `;
     })
@@ -868,7 +1098,7 @@ function renderCoverageCard(task) {
     <article class="coverage-card ${tech ? "assigned" : "uncovered"}">
       <div class="coverage-card-top">
         <strong>${task.id}</strong>
-        <span class="badge ${priorityClass}">${task.priority}</span>
+        <span class="badge ${priorityClass}">${capitalize(task.priority)}</span>
       </div>
       <p>${task.site}<br>${task.intakeCategory || task.title}</p>
       <div class="coverage-assignee">${tech ? tech.name : "Unassigned"}</div>
@@ -876,11 +1106,18 @@ function renderCoverageCard(task) {
   `;
 }
 
-function renderMapInstance(elementId) {
-  const element = document.querySelector(`#${elementId}`);
-  if (!element || !window.L) {
-    return;
+function renderMapForView(viewName) {
+  if (viewName === "dashboard") renderMapInstance("dashboardCoverageMap", state.tasks);
+  if (viewName === "planner") {
+    const region = els.regionFilter.value;
+    const filteredTasks = state.tasks.filter((task) => region === "all" || task.region === region);
+    renderMapInstance("plannerCoverageMap", filteredTasks);
   }
+}
+
+function renderMapInstance(elementId, tasks) {
+  const element = document.querySelector(`#${elementId}`);
+  if (!element || !window.L) return;
 
   if (!mapInstances[elementId]) {
     const map = L.map(element, { scrollWheelZoom: false, zoomControl: true }).setView([39.5, -98.35], 4);
@@ -902,11 +1139,12 @@ function renderMapInstance(elementId) {
     bounds.push([tech.lat, tech.lng]);
   });
 
-  state.tasks.forEach((task) => {
+  tasks.forEach((task) => {
     const tech = state.technicians.find((item) => item.id === state.assignments[task.id]);
-    const color = tech ? tech.color : "#A33A32";
-    L.marker([task.lat, task.lng], { icon: createMapIcon(color, tech ? "✓" : "!") })
-      .bindPopup(`<strong>${task.id} - ${task.site}</strong><br>${task.city}<br>${task.intakeCategory || task.title}<br>Priority: ${task.priority}<br>Assigned: ${tech ? tech.name : "Unassigned"}`)
+    const color = tech ? tech.color : "#a33a32";
+    const label = tech ? "A" : "!";
+    L.marker([task.lat, task.lng], { icon: createMapIcon(color, label) })
+      .bindPopup(`<strong>${task.id} - ${task.site}</strong><br>${task.city}<br>${task.intakeCategory || task.title}<br>Assigned: ${tech ? tech.name : "Unassigned"}`)
       .addTo(layer);
     bounds.push([task.lat, task.lng]);
 
@@ -929,23 +1167,17 @@ function renderMapInstance(elementId) {
   if (bounds.length) {
     map.fitBounds(bounds, { padding: [24, 24], maxZoom: 5 });
   }
-  setTimeout(() => map.invalidateSize(), 60);
+  setTimeout(() => map.invalidateSize(), 120);
 }
 
 function createMapIcon(color, label) {
   return L.divIcon({
     className: "coverage-map-icon",
     html: `<span style="background:${color}">${label}</span>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
     popupAnchor: [0, -14]
   });
-}
-
-function invalidateMap(elementId) {
-  if (mapInstances[elementId]) {
-    mapInstances[elementId].map.invalidateSize();
-  }
 }
 
 function renderAtlas() {
@@ -1012,22 +1244,22 @@ function renderKpis() {
   if (unassigned > 0) conflictParts.push(`${unassigned} task uncovered`);
   state.technicians.forEach((tech) => {
     const travelMinutes = getTechTasks(tech.id).reduce((sum, task) => sum + (isRemoteTask(task) ? 0 : estimateTravelMinutes(tech, task)), 0);
-    if (travelMinutes > tech.maxTravel) {
-      conflictParts.push(`${tech.name} exceeds travel limit`);
-    }
+    if (travelMinutes > tech.maxTravel) conflictParts.push(`${tech.name} exceeds travel limit`);
   });
   els.conflictSummary.textContent = conflictParts.length ? conflictParts.join(". ") : "No uncovered tasks or travel conflicts.";
 }
 
 function renderPmSection() {
-  if (!window.pmModuleTemplates) {
-    return;
-  }
+  if (!window.pmModuleTemplates) return;
+
   const pmSites = getPmSites();
   if (!state.activePmSiteId && pmSites[0]) {
     state.activePmSiteId = pmSites[0].siteId;
   }
-  els.pmSiteFilter.innerHTML = pmSites.map((site) => `<option value="${site.siteId}" ${site.siteId === state.activePmSiteId ? "selected" : ""}>${site.site} - ${site.city}</option>`).join("");
+
+  els.pmSiteFilter.innerHTML = pmSites
+    .map((site) => `<option value="${site.siteId}" ${site.siteId === state.activePmSiteId ? "selected" : ""}>${site.site} - ${site.city}</option>`)
+    .join("");
 
   const site = pmSites.find((item) => item.siteId === state.activePmSiteId) || pmSites[0];
   if (!site) return;
@@ -1078,7 +1310,7 @@ function renderPmSection() {
 function renderPmActivities(site, moduleName) {
   const template = getPmTemplate(moduleName);
   if (!template) {
-    els.pmActivityPanel.innerHTML = `<div class="empty-state">No PM template found for ${moduleName}.</div>`;
+    els.pmActivityPanel.innerHTML = `<div class="empty-state">No PM template found for ${moduleName || "this site"}.</div>`;
     return;
   }
 
@@ -1125,12 +1357,13 @@ function renderPmActivities(site, moduleName) {
 }
 
 function getPmSites() {
-  const defaultPlans = (window.sitePmPlans || []).map((plan) => ({ ...plan }));
-  const existingIds = new Set(defaultPlans.map((plan) => plan.siteId));
+  const plans = (window.sitePmPlans || []).map((plan) => ({ ...plan }));
+  const existingIds = new Set(plans.map((plan) => plan.siteId));
+
   state.sites
     .filter((site) => site.contract === "direct" && !existingIds.has(site.id))
     .forEach((site) => {
-      defaultPlans.push({
+      plans.push({
         siteId: site.id,
         site: site.site,
         city: site.city,
@@ -1140,7 +1373,8 @@ function getPmSites() {
         modules: []
       });
     });
-  return defaultPlans;
+
+  return plans;
 }
 
 function getPmTemplate(moduleName) {
@@ -1189,6 +1423,7 @@ function addManualTask(event) {
   event.preventDefault();
   const site = state.sites.find((item) => item.id === els.manualTaskSite.value);
   if (!site) return;
+
   const taskType = els.manualTaskType.value;
   const config = getManualTaskConfig(taskType, site);
   const task = enrichTask({
@@ -1212,10 +1447,9 @@ function addManualTask(event) {
 
   state.manualTasks.push(task);
   persistManualTasks();
-  state.tasks = [...buildBaselineTasks(), ...state.manualTasks];
   els.manualTaskForm.reset();
   updateManualTaskDefaults();
-  render();
+  generatePlan();
 }
 
 function getManualTaskConfig(taskType, site) {
@@ -1233,10 +1467,11 @@ function getManualTaskConfig(taskType, site) {
       preferredTechIds: site.preferredTechIds
     };
   }
+
   if (taskType === "partner_l2_l3_escalation") {
     const partnerResources = site.id === "partner-west-01" ? [...seniorPlusLead, ...middleware] : seniorPlusLead;
     return {
-      label: "Partner escalation L2/L3",
+      label: "Partner L2/L3 escalation",
       skill: "PARTNER_ESCALATION",
       type: "partner_escalation",
       contract: "partner",
@@ -1246,6 +1481,7 @@ function getManualTaskConfig(taskType, site) {
       hardEligibleTechIds: partnerResources
     };
   }
+
   if (taskType === "onsite_urgent_l3") {
     return {
       label: "Urgent onsite L3",
@@ -1256,6 +1492,7 @@ function getManualTaskConfig(taskType, site) {
       preferredTechIds: [...seniors, ...(site.preferredTechIds || [])]
     };
   }
+
   if (taskType === "middleware_support") {
     return {
       label: "Middleware support",
@@ -1268,6 +1505,7 @@ function getManualTaskConfig(taskType, site) {
       hardEligibleTechIds: middleware
     };
   }
+
   if (taskType === "planned_weekly_work") {
     return {
       label: "Planned weekly work",
@@ -1278,6 +1516,7 @@ function getManualTaskConfig(taskType, site) {
       preferredTechIds: site.preferredTechIds
     };
   }
+
   return {
     label: "Direct customer issue L1/L2/L3",
     skill: "L2_SUPPORT",
@@ -1314,10 +1553,9 @@ function updateManualTaskDefaults() {
 function removeManualTask(taskId) {
   state.manualTasks = state.manualTasks.filter((task) => task.id !== taskId);
   persistManualTasks();
-  state.tasks = [...buildBaselineTasks(), ...state.manualTasks];
   delete state.assignments[taskId];
   state.manualOverrides.delete(taskId);
-  render();
+  generatePlan();
 }
 
 function addCustomResource(event) {
@@ -1328,6 +1566,7 @@ function addCustomResource(event) {
   const region = els.resourceRegion.value;
   const skills = document.querySelector("#resourceSkills").value.split(",").map((item) => item.trim()).filter(Boolean);
   const coverage = document.querySelector("#resourceCoverage").value.trim() || "Custom resource";
+
   const resource = {
     id: `resource-${Date.now().toString(36)}`,
     name,
@@ -1344,12 +1583,13 @@ function addCustomResource(event) {
     maxTravel: Number(document.querySelector("#resourceTravel").value),
     color: colorForIndex(state.technicians.length + 1)
   };
+
   const customResources = [...loadJson(STORAGE_KEYS.customResources, []), resource];
   localStorage.setItem(STORAGE_KEYS.customResources, JSON.stringify(customResources));
   resource.skills.forEach(pushCustomSkill);
   hydrateState();
   els.resourceForm.reset();
-  render();
+  generatePlan();
 }
 
 function removeCustomResource(resourceId) {
@@ -1367,6 +1607,7 @@ function addCustomSite(event) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+
   const preferredTechIds = state.technicians
     .filter((tech) => preferredNames.some((name) => tech.name.toLowerCase() === name.toLowerCase()))
     .map((tech) => tech.id);
@@ -1383,11 +1624,12 @@ function addCustomSite(event) {
     contract: document.querySelector("#siteContract").value,
     preferredTechIds
   };
+
   const customSites = [...loadJson(STORAGE_KEYS.customSites, []), site];
   localStorage.setItem(STORAGE_KEYS.customSites, JSON.stringify(customSites));
   hydrateState();
   els.siteForm.reset();
-  render();
+  generatePlan();
 }
 
 function removeCustomSite(siteId) {
@@ -1464,7 +1706,22 @@ function bindDropZones() {
 }
 
 function exportCsv() {
-  const rows = [["task_id", "title", "site", "city", "task_type", "intake_category", "source", "priority", "skill", "assigned_technician", "planned_window", "estimated_travel_minutes", "manual_override"]];
+  const rows = [[
+    "task_id",
+    "title",
+    "site",
+    "city",
+    "task_type",
+    "intake_category",
+    "source",
+    "priority",
+    "skill",
+    "assigned_technician",
+    "planned_window",
+    "estimated_travel_minutes",
+    "manual_override"
+  ]];
+
   state.tasks.forEach((task) => {
     const tech = state.technicians.find((item) => item.id === state.assignments[task.id]);
     rows.push([
@@ -1483,6 +1740,7 @@ function exportCsv() {
       state.manualOverrides.has(task.id) ? "yes" : "no"
     ]);
   });
+
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -1491,23 +1749,6 @@ function exportCsv() {
   link.download = "usa-field-plan.csv";
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function miniTaskMarkup(task) {
-  const badgeColor = task.priority === "critical" ? "red" : task.priority === "high" ? "amber" : task.priority === "medium" ? "blue" : "green";
-  return `
-    <article class="mini-card">
-      <div class="mini-card-top">
-        <strong>${task.id}</strong>
-        <span class="badge ${badgeColor}">${task.priority}</span>
-      </div>
-      <p>${task.site}<br>${task.intakeCategory || task.title}</p>
-      <div class="mini-metric">
-        <span>${task.contract}</span>
-        <span>${task.windowStart}-${task.windowEnd}</span>
-      </div>
-    </article>
-  `;
 }
 
 function loadJson(key, fallback) {
@@ -1520,22 +1761,33 @@ function loadJson(key, fallback) {
 }
 
 function getRegions() {
-  return [...new Set([...baseRegions, ...state.customRegions, ...state.technicians.map((item) => item.region), ...state.sites.map((item) => item.region)])].filter(Boolean);
+  return [...new Set([
+    ...baseRegions,
+    ...state.customRegions,
+    ...state.technicians.map((item) => item.region),
+    ...state.sites.map((item) => item.region)
+  ])].filter(Boolean);
 }
 
 function getSkills() {
-  return [...new Set([...state.customSkills, ...state.technicians.flatMap((item) => item.skills), ...state.tasks.map((item) => item.skill)])].filter(Boolean).sort();
+  return [...new Set([
+    ...state.customSkills,
+    ...state.technicians.flatMap((item) => item.skills),
+    ...state.tasks.map((item) => item.skill)
+  ])]
+    .filter(Boolean)
+    .sort();
 }
 
 function defaultCoordsForRegion(region) {
-  const map = {
+  const coords = {
     Northeast: { lat: 40.8, lng: -74.4 },
     Midwest: { lat: 39.8, lng: -89.4 },
     Southeast: { lat: 34.2, lng: -84.2 },
     West: { lat: 34.1, lng: -118.2 },
     Remote: { lat: 39.8283, lng: -98.5795 }
   };
-  return map[region] || map.Remote;
+  return coords[region] || coords.Remote;
 }
 
 function colorForIndex(index) {
