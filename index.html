@@ -1,436 +1,729 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>USA Field Resource Planner</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="styles.css?v=20260421-4">
-  </head>
-  <body>
-    <main class="app-shell">
-      <aside class="sidebar">
-        <div class="brand-block">
-          <p class="eyebrow">USA Field Support</p>
-          <h1>Field Ops Planner v3</h1>
-          <p class="subtle-copy">Shared service planning, PM visibility, fair load, and team growth in one place.</p>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Field Ops Planner v4 Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <link rel="stylesheet" href="styles.css?v=20260423-6">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <div class="brand-title">Field Ops Planner <span>v4 preview</span></div>
+          <p>Inpeco USA service operations</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="generatePlanBtn" class="btn btn-primary">Generate plan</button>
+        <button id="resetPlanBtn" class="btn btn-secondary">Reset</button>
+        <button id="exportCsvBtn" class="btn btn-secondary">Export CSV</button>
+        <button id="notificationsOpenBtn" class="icon-button" aria-label="Notifications">
+          <span class="icon-badge" id="notificationBadge" hidden>0</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
+        <button id="settingsOpenBtn" class="icon-button" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="sidebar-title">Operations</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="dashboard">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-view="planner">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span>Planner</span>
+        </button>
+        <button class="nav-item" data-view="week">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="9" y1="4" x2="9" y2="22"></line></svg>
+          <span>Week</span>
+        </button>
+        <button class="nav-item" data-view="atlas">
+          <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+          <span>Atlas</span>
+        </button>
+        <button class="nav-item" data-view="pm">
+          <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          <span>Preventive Maintenance</span>
+        </button>
+        <button class="nav-item" data-view="notifications">
+          <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span>Notifications</span>
+        </button>
+      </nav>
+      <div class="sidebar-scoring">
+        <strong>Scoring logic</strong>
+        <ul>
+          <li>Required skill match</li>
+          <li>Dedicated site eligibility</li>
+          <li>Preferred resource hints</li>
+          <li>Resource classification</li>
+          <li>Region and travel burden</li>
+          <li>Current workload and limits</li>
+          <li>Task priority</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section id="view-dashboard" class="view active">
+        <div class="page-header">
+          <div>
+            <p class="eyebrow">Operations command</p>
+            <h1>Dashboard</h1>
+            <p class="page-copy">Coverage, intake pressure, PM visibility, and load balancing in one clean view.</p>
+          </div>
+          <div class="header-pill-row" id="dashboardHeroPills"></div>
         </div>
 
-        <nav class="sidebar-nav" aria-label="Main navigation">
-          <button class="nav-button active" data-view="dashboard">Dash</button>
-          <button class="nav-button" data-view="planner">Planner</button>
-          <button class="nav-button" data-view="atlas">Atlas</button>
-          <button class="nav-button" data-view="pm">PM</button>
-        </nav>
+        <div class="kpi-strip" id="dashboardKpis"></div>
 
-        <section class="sidebar-card">
-          <p class="eyebrow">Scoring logic</p>
-          <ul class="logic-list">
-            <li>Required skill match</li>
-            <li>Dedicated site eligibility</li>
-            <li>Preferred resources</li>
-            <li>Resource classification</li>
-            <li>Region vs task region</li>
-            <li>Travel time from home base</li>
-            <li>Current workload and daily limits</li>
-            <li>Task priority</li>
-          </ul>
-        </section>
-      </aside>
-
-      <section class="main-shell">
-        <header class="topbar">
-          <div>
-            <p class="eyebrow">Operations workspace</p>
-            <h2 id="viewTitle">Dashboard</h2>
-            <p id="viewSubtitle" class="subtle-copy">Live service coverage, intake pressure, and dispatch status at a glance.</p>
-          </div>
-          <div class="actions">
-            <button id="generatePlan" class="primary">Generate plan</button>
-            <button id="resetPlan">Reset</button>
-            <button id="exportCsv">Export CSV</button>
-            <button id="printPlan">Print PDF</button>
-          </div>
-        </header>
-
-        <section class="hero-band">
-          <div>
-            <p class="eyebrow">Current scope</p>
-            <h3>Shared service model, real team structure, and editable intake</h3>
-            <p>Task intake stays separate from master data. Atlas owns resources, sites, regions, and skills. Planner owns day-to-day work.</p>
-          </div>
-          <div id="heroStats" class="hero-meta"></div>
-        </section>
-
-        <section class="kpi-strip" aria-label="Planner KPI">
-          <article>
-            <span id="kpiAssigned">0</span>
-            <p>Assigned tasks</p>
-          </article>
-          <article>
-            <span id="kpiUnassigned">0</span>
-            <p>Open gaps</p>
-          </article>
-          <article>
-            <span id="kpiTravel">0h</span>
-            <p>Estimated travel</p>
-          </article>
-          <article>
-            <span id="kpiUtilization">0%</span>
-            <p>Average utilization</p>
-          </article>
-        </section>
-
-        <section class="view-panel active" data-view-panel="dashboard">
-          <div class="dashboard-grid">
-            <section class="panel panel-span-two">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Coverage</p>
-                  <h3>National map</h3>
-                </div>
-                <p id="conflictSummary" class="subtle-copy">Coverage summary will appear here.</p>
-              </div>
-              <div id="dashboardCoverageMap" class="coverage-map"></div>
-            </section>
-
-            <section class="panel">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Operational footprint</p>
-                  <h3>Network stats</h3>
-                </div>
-              </div>
-              <div id="dashboardStats" class="stats-grid"></div>
-            </section>
-
-            <section class="panel">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Pressure points</p>
-                  <h3>Open work and gaps</h3>
-                </div>
-                <button class="ghost" data-go-view="planner">Open planner</button>
-              </div>
-              <div id="dashboardTaskList" class="mini-list"></div>
-            </section>
-
-            <section class="panel">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Load balance</p>
-                  <h3>Most loaded resources</h3>
-                </div>
-                <button class="ghost" data-go-view="planner">Detailed board</button>
-              </div>
-              <div id="dashboardMiniPlan" class="mini-list"></div>
-            </section>
-
-            <section class="panel">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Contracts</p>
-                  <h3>Coverage mix</h3>
-                </div>
-              </div>
-              <div id="dashboardContractMix" class="mini-list"></div>
-            </section>
-          </div>
-        </section>
-
-        <section class="view-panel" data-view-panel="planner">
-          <section class="panel">
-            <div class="section-header">
+        <div class="dashboard-grid">
+          <article class="card card-map">
+            <div class="card-head">
               <div>
-                <p class="eyebrow">Task intake</p>
-                <h3>Unplanned tasks and support requests</h3>
-                <p>Use this page only for weekly work intake, unexpected customer support, partner L2/L3 escalation, and coverage gaps.</p>
+                <p class="section-tag">Coverage</p>
+                <h2>National map</h2>
+              </div>
+              <span class="subtle" id="dashboardMapSummary"></span>
+            </div>
+            <div id="dashboardMap" class="map-frame"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Pressure points</p>
+                <h2>Open work and gaps</h2>
+              </div>
+              <button class="btn btn-inline" data-go-view="planner">Open planner</button>
+            </div>
+            <div id="dashboardAttentionList" class="stack-list"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Load balance</p>
+                <h2>Most loaded resources</h2>
+              </div>
+              <button class="btn btn-inline" data-go-view="week">Open week</button>
+            </div>
+            <div id="dashboardLoadList" class="stack-list"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Footprint</p>
+                <h2>Network snapshot</h2>
               </div>
             </div>
+            <div id="dashboardStatsGrid" class="stats-grid compact"></div>
+          </article>
+        </div>
 
-            <form id="manualTaskForm" class="form-grid task-form-grid">
-              <label class="span-3">
-                Work type
-                <select id="manualTaskType" required>
-                  <option value="direct_customer_issue">Direct customer issue L1/L2/L3</option>
-                  <option value="partner_l2_l3_escalation">Partner escalation L2/L3</option>
-                  <option value="site_coverage_gap">Site coverage gap</option>
-                  <option value="onsite_urgent_l3">Urgent onsite L3</option>
-                  <option value="middleware_support">Middleware support</option>
-                  <option value="planned_weekly_work">Planned weekly work</option>
-                </select>
+        <article class="card dashboard-growth-card">
+          <div class="card-head">
+            <div>
+              <p class="section-tag">Growth & fair load</p>
+              <h2>Team development signal</h2>
+            </div>
+          </div>
+          <div id="dashboardGrowthPanel" class="stack-list"></div>
+        </article>
+      </section>
+
+      <section id="view-planner" class="view">
+        <div class="page-header">
+          <div>
+            <p class="eyebrow">Operations workspace</p>
+            <h1>Planner</h1>
+            <p class="page-copy">Fast task intake, dispatch detail, weekly due items, and assignment review without layout conflicts.</p>
+          </div>
+          <div class="header-pill-row" id="plannerHeroPills"></div>
+        </div>
+
+        <div class="kpi-strip" id="plannerKpis"></div>
+
+        <div class="planner-grid">
+          <article class="card span-2">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Task intake</p>
+                <h2>Unplanned tasks and support requests</h2>
+              </div>
+            </div>
+            <form id="manualTaskForm" class="smart-form form-grid form-grid-intake">
+              <label>
+                <span>Work type</span>
+                <select id="manualTaskType"></select>
               </label>
-              <label class="span-3">
-                Site / customer
-                <select id="manualTaskSite" required></select>
+              <label>
+                <span>Site / customer</span>
+                <select id="manualTaskSite"></select>
               </label>
-              <label class="span-3">
-                Title
-                <input id="manualTaskTitle" type="text" placeholder="Short description" required>
+              <label>
+                <span>Title</span>
+                <input id="manualTaskTitle" type="text" placeholder="Short description">
               </label>
-              <label class="span-3">
-                Priority
-                <select id="manualTaskPriority" required>
-                  <option value="high">High</option>
+              <label>
+                <span>Priority</span>
+                <select id="manualTaskPriority">
                   <option value="critical">Critical</option>
+                  <option value="high" selected>High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
                 </select>
               </label>
-              <label class="span-2">
-                Duration
-                <select id="manualTaskDuration" required>
+              <label>
+                <span>Skill</span>
+                <select id="manualTaskSkill"></select>
+              </label>
+              <label>
+                <span>Duration</span>
+                <select id="manualTaskDuration">
                   <option value="60">1h</option>
                   <option value="120">2h</option>
                   <option value="180">3h</option>
-                  <option value="240">4h</option>
-                  <option value="480">Full day</option>
+                  <option value="240" selected>4h</option>
+                  <option value="360">6h</option>
+                  <option value="480">8h</option>
                 </select>
               </label>
-              <label class="span-2">
-                Window start
-                <input id="manualTaskStart" type="time" value="08:30" required>
+              <label>
+                <span>Window start</span>
+                <input id="manualTaskStart" type="time" value="08:30">
               </label>
-              <label class="span-2">
-                Window end
-                <input id="manualTaskEnd" type="time" value="17:30" required>
+              <label>
+                <span>Window end</span>
+                <input id="manualTaskEnd" type="time" value="17:30">
               </label>
-              <div class="form-action span-2">
-                <button type="submit" class="primary">Add task</button>
+              <label class="toggle-field">
+                <span>Remote support</span>
+                <input id="manualTaskRemote" type="checkbox">
+              </label>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Add task</button>
               </div>
             </form>
+            <div id="manualTaskList" class="mini-list"></div>
+          </article>
 
-            <div id="manualTaskList" class="manual-task-list"></div>
-          </section>
-
-          <div class="planner-layout">
-            <section class="panel">
-              <div class="section-header">
-                <div>
-                  <p class="eyebrow">Dispatch map</p>
-                  <h3>Coverage and dispatch detail</h3>
-                </div>
-                <label class="compact-label">
-                  Region
-                  <select id="regionFilter" aria-label="Filter by region">
-                    <option value="all">All regions</option>
-                  </select>
-                </label>
+          <article class="card span-2 card-board-main">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Assignments</p>
+                <h2>Daily technician board</h2>
               </div>
-              <div id="plannerCoverageMap" class="coverage-map"></div>
-              <div id="coverageBoard" class="coverage-board compact"></div>
-            </section>
+              <div class="board-nav" id="plannerBoardNav">
+                <button class="btn btn-inline" type="button" data-board-nav="prev">← Prev</button>
+                <button class="btn btn-inline" type="button" data-board-nav="today">Today</button>
+                <button class="btn btn-inline" type="button" data-board-nav="next">Next →</button>
+                <span class="board-date-label" id="plannerBoardDate"></span>
+              </div>
+            </div>
+            <div id="plannerBoard" class="board-row"></div>
+          </article>
 
-            <section class="planner-columns">
-              <aside class="panel">
-                <div class="section-header">
-                  <div>
-                    <p class="eyebrow">Task queue</p>
-                    <h3>Unassigned intake</h3>
-                  </div>
-                </div>
-                <div id="taskPool" class="task-list drop-zone" data-tech-id="unassigned"></div>
-              </aside>
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">This week</p>
+                <h2>Due and urgent</h2>
+              </div>
+              <button class="btn btn-inline" data-go-view="week">Open week view</button>
+            </div>
+            <div id="plannerDueList" class="stack-list"></div>
+          </article>
 
-              <section class="panel" aria-label="Daily technician planner">
-                <div class="planner-header">
-                  <div>
-                    <p class="eyebrow">Daily plan</p>
-                    <h3>Detailed technician board</h3>
-                    <p>Drag tasks between technicians or back to intake. Manual changes are marked and exported.</p>
-                  </div>
-                  <label class="compact-label">
-                    Planning date
-                    <input id="planDate" type="date" value="2026-04-21">
-                  </label>
-                </div>
-                <div id="technicianBoard" class="technician-board"></div>
-              </section>
-            </section>
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Unassigned queue</p>
+                <h2>Coverage gaps</h2>
+              </div>
+            </div>
+            <div id="plannerTaskPool" class="stack-list droppable-pool" data-tech-id="unassigned"></div>
+          </article>
+
+          <article class="card card-map">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Dispatch map</p>
+                <h2>Coverage and dispatch detail</h2>
+              </div>
+              <label class="inline-filter">
+                <span>Region</span>
+                <select id="plannerRegionFilter"></select>
+              </label>
+            </div>
+            <div id="plannerMap" class="map-frame"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-week" class="view">
+        <div class="page-header">
+          <div>
+            <p class="eyebrow">Weekly rhythm</p>
+            <h1>Week</h1>
+            <p class="page-copy">Compact weekly schema for current priorities, dedicated coverage anchors, and planned workload.</p>
           </div>
-        </section>
+        </div>
 
-        <section class="view-panel" data-view-panel="atlas">
-          <div class="atlas-layout">
-            <section class="panel">
-              <div class="section-header">
+        <div class="kpi-strip" id="weekKpis"></div>
+
+        <div class="week-grid">
+          <article class="card span-2">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Schedule</p>
+                <h2>Multi-view calendar</h2>
+              </div>
+            </div>
+            <div id="weekCalendarHost" class="calendar-host"></div>
+            <div id="weekCalendar" class="calendar-grid"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">Coverage anchors</p>
+                <h2>Dedicated site model</h2>
+              </div>
+            </div>
+            <div id="weekCoverageList" class="stack-list"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <p class="section-tag">PM radar</p>
+                <h2>Upcoming PM windows</h2>
+              </div>
+            </div>
+            <div id="weekPmList" class="stack-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-atlas" class="view">
+        <div class="page-header">
+          <div>
+            <p class="eyebrow">Operations atlas</p>
+            <h1>Atlas</h1>
+            <p class="page-copy">Master data for resources, sites, regions, skills, and site documents used by PM and support model evaluation.</p>
+          </div>
+        </div>
+
+        <div class="subnav" id="atlasTabs">
+          <button class="subnav-item active" data-atlas-tab="resources">Resources</button>
+          <button class="subnav-item" data-atlas-tab="sites">Sites</button>
+          <button class="subnav-item" data-atlas-tab="regions">Regions</button>
+          <button class="subnav-item" data-atlas-tab="skills">Skills</button>
+          <button class="subnav-item" data-atlas-tab="tasks">Tasks</button>
+        </div>
+
+        <div id="atlasPanelResources" class="atlas-panel active">
+          <div class="atlas-grid">
+            <article class="card">
+              <div class="card-head">
                 <div>
-                  <p class="eyebrow">Atlas</p>
-                  <h3>Resources and roles</h3>
-                  <p>Master data area for resources, regions, working windows, travel limits, and skills.</p>
+                  <p class="section-tag">Resource intake</p>
+                  <h2>Add or update resources</h2>
                 </div>
               </div>
-
-              <form id="resourceForm" class="form-grid atlas-form-grid">
-                <label class="span-4">
-                  Resource name
-                  <input id="resourceName" type="text" placeholder="New engineer / planner name" required>
-                </label>
-                <label class="span-3">
-                  Classification
-                  <input id="resourceClassification" type="text" placeholder="OSE, Senior FSE, Middleware SW" required>
-                </label>
-                <label class="span-3">
-                  Home base
-                  <input id="resourceBase" type="text" placeholder="City, State or region" required>
-                </label>
-                <label class="span-2">
-                  Region
-                  <select id="resourceRegion" required></select>
-                </label>
-                <label class="span-4">
-                  Skills
-                  <input id="resourceSkills" type="text" placeholder="Comma separated skill codes" required>
-                </label>
-                <label class="span-4">
-                  Coverage notes
-                  <input id="resourceCoverage" type="text" placeholder="Primary role or responsibility">
-                </label>
-                <label class="span-1">
-                  Start
-                  <input id="resourceStart" type="time" value="08:30" required>
-                </label>
-                <label class="span-1">
-                  End
-                  <input id="resourceEnd" type="time" value="17:30" required>
-                </label>
-                <label class="span-1">
-                  Max hours
-                  <input id="resourceHours" type="number" min="1" max="24" step="0.5" value="8" required>
-                </label>
-                <label class="span-2">
-                  Max travel minutes
-                  <input id="resourceTravel" type="number" min="0" step="15" value="180" required>
-                </label>
-                <div class="form-action span-2">
-                  <button type="submit" class="primary">Add resource</button>
-                </div>
+              <form id="resourceForm" class="smart-form form-grid form-grid-4">
+                <input id="resourceId" type="hidden">
+                <label><span>Resource name</span><input id="resourceName" type="text" placeholder="New engineer / planner"></label>
+                <label><span>Classification</span><input id="resourceClass" type="text" placeholder="OSE, Senior FSE, Middleware"></label>
+                <label><span>Role family</span><select id="resourceRoleFamily">
+                  <option value="OSE">OSE</option>
+                  <option value="OSE_NIGHT">OSE Night</option>
+                  <option value="FSE_HW">FSE HW</option>
+                  <option value="FSE_SW">FSE SW</option>
+                  <option value="SENIOR_FSE_HW">Senior FSE HW</option>
+                  <option value="SENIOR_FSE_SW">Senior FSE SW</option>
+                  <option value="MIDDLEWARE_SW">Middleware SW</option>
+                  <option value="TECHNICAL_LEADER">Technical Leader</option>
+                </select></label>
+                <label><span>Home base</span><input id="resourceBase" type="text" placeholder="City, State"></label>
+                <label><span>Region</span><select id="resourceRegion"></select></label>
+                <label><span>Default work mode</span><select id="resourceDefaultWorkMode">
+                  <option value="onsite_default">Onsite default</option>
+                  <option value="remote_default">Remote default</option>
+                  <option value="hybrid">Hybrid</option>
+                </select></label>
+                <label><span>Primary domain</span><select id="resourcePrimaryDomain">
+                  <option value="hw">HW</option>
+                  <option value="sw">SW</option>
+                </select></label>
+                <label><span>Permanent site</span><select id="resourceAssignedSite"><option value="">No permanent site</option></select></label>
+                <label class="span-2"><span>Secondary domains</span><input id="resourceSecondaryDomains" type="text" placeholder="mechanical, electrical, informatics, middleware"></label>
+                <label class="span-2"><span>Skills</span><input id="resourceSkills" type="text" placeholder="Comma separated skill codes"></label>
+                <label class="span-2"><span>Coverage notes</span><input id="resourceCoverage" type="text" placeholder="Primary role or responsibility"></label>
+                <label><span>Start</span><input id="resourceStart" type="time" value="08:30"></label>
+                <label><span>End</span><input id="resourceEnd" type="time" value="17:30"></label>
+                <label class="toggle-field"><span>Can mentor</span><input id="resourceCanMentor" type="checkbox"></label>
+                <label class="toggle-field"><span>Can be mentored</span><input id="resourceCanBeMentored" type="checkbox" checked></label>
+                <label><span>Mentor track</span><select id="resourceMentorTrack"><option value="hw">HW</option><option value="sw">SW</option><option value="both">Both</option></select></label>
+                <label><span>Deployment status</span><select id="resourceDeploymentStatus">
+                  <option value="home">Home</option>
+                  <option value="temporary_onsite_support">Temporary onsite support</option>
+                  <option value="installation_trip">Installation trip</option>
+                  <option value="l3_onsite_trip">L3 onsite trip</option>
+                </select></label>
+                <label class="toggle-field"><span>Hotline HW</span><input id="resourceHotlineHw" type="checkbox"></label>
+                <label class="toggle-field"><span>Hotline SW</span><input id="resourceHotlineSw" type="checkbox"></label>
+                <label class="toggle-field"><span>L3 onsite</span><input id="resourceL3Onsite" type="checkbox"></label>
+                <label class="toggle-field"><span>Installation / upgrade</span><input id="resourceInstallation" type="checkbox"></label>
+                <label class="toggle-field"><span>Partner remote support</span><input id="resourcePartnerRemote" type="checkbox"></label>
+                <label class="toggle-field"><span>Direct remote support</span><input id="resourceDirectRemote" type="checkbox"></label>
+                <label><span>Max hours</span><input id="resourceHours" type="number" min="1" max="24" value="8"></label>
+                <label><span>Max travel minutes</span><input id="resourceTravel" type="number" min="0" max="1000" value="180"></label>
+                <input id="resourceLat" type="hidden">
+                <input id="resourceLng" type="hidden">
+                <div class="form-actions span-4"><button class="btn btn-primary" type="submit">Add resource</button></div>
               </form>
+            </article>
 
-              <div id="resourceList" class="directory-list"></div>
-            </section>
-
-            <section class="panel">
-              <div class="section-header">
+            <article class="card">
+              <div class="card-head">
                 <div>
-                  <p class="eyebrow">Atlas</p>
-                  <h3>Clients and sites</h3>
-                  <p>Maintain the installed network, contract type, preferred resources, and site geography.</p>
+                  <p class="section-tag">Roster</p>
+                  <h2>Resource directory</h2>
                 </div>
               </div>
+              <div id="resourceList" class="directory-list"></div>
+            </article>
+          </div>
+        </div>
 
-              <form id="siteForm" class="form-grid atlas-form-grid">
-                <label class="span-3">
-                  Customer
-                  <input id="siteCustomer" type="text" placeholder="Customer name" required>
-                </label>
-                <label class="span-3">
-                  Site name
-                  <input id="siteName" type="text" placeholder="Hospital, lab, partner site" required>
-                </label>
-                <label class="span-3">
-                  City / area
-                  <input id="siteCity" type="text" placeholder="City, State" required>
-                </label>
-                <label class="span-3">
-                  Region
-                  <select id="siteRegion" required></select>
-                </label>
-                <label class="span-2">
-                  Contract
-                  <select id="siteContract" required>
+        <div id="atlasPanelSites" class="atlas-panel">
+          <div class="atlas-grid">
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Client intake</p>
+                  <h2>Add site or customer</h2>
+                </div>
+              </div>
+              <form id="siteForm" class="smart-form form-grid form-grid-4">
+                <input id="siteId" type="hidden">
+                <label><span>Customer</span><input id="siteCustomer" type="text" placeholder="Customer name"></label>
+                <label><span>Site name</span><input id="siteName" type="text" placeholder="Hospital, lab, partner site"></label>
+                <label><span>City / area</span><input id="siteCity" type="text" placeholder="City, State"></label>
+                <label><span>Region</span><select id="siteRegion"></select></label>
+                <label><span>Contract</span>
+                  <select id="siteContract">
                     <option value="direct">Direct</option>
                     <option value="partner">Partner</option>
                     <option value="internal">Internal</option>
                   </select>
                 </label>
-                <label class="span-2">
-                  Latitude
-                  <input id="siteLat" type="number" step="0.0001" placeholder="Optional">
+                <label><span>Latitude</span><input id="siteLat" type="number" step="0.0001" placeholder="Optional"></label>
+                <label><span>Longitude</span><input id="siteLng" type="number" step="0.0001" placeholder="Optional"></label>
+                <label><span>Preferred resources</span><input id="sitePreferred" type="text" placeholder="Optional, comma separated"></label>
+                <div class="form-actions span-4"><button class="btn btn-primary" type="submit">Add site</button></div>
+              </form>
+            </article>
+
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Site documents</p>
+                  <h2>Layouts and service agreements</h2>
+                </div>
+              </div>
+              <form id="siteDocsForm" class="smart-form form-grid form-grid-2">
+                <label>
+                  <span>Target site</span>
+                  <select id="siteDocsTarget"></select>
                 </label>
-                <label class="span-2">
-                  Longitude
-                  <input id="siteLng" type="number" step="0.0001" placeholder="Optional">
+                <div class="form-note">
+                  Layout spreadsheets are used to infer installed modules for PM. Service agreements document expected support model.
+                </div>
+                <label>
+                  <span>Layout file (.xlsx / .csv)</span>
+                  <input id="siteLayoutFiles" type="file" multiple accept=".xlsx,.xls,.csv,.tsv">
                 </label>
-                <label class="span-4">
-                  Preferred resources
-                  <input id="sitePreferred" type="text" placeholder="Optional, comma separated resource names">
+                <label>
+                  <span>Service agreement files</span>
+                  <input id="siteAgreementFiles" type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt">
                 </label>
-                <div class="form-action span-2">
-                  <button type="submit" class="primary">Add site</button>
+                <div class="form-actions span-2"><button class="btn btn-primary" type="submit">Attach files</button></div>
+              </form>
+            </article>
+
+            <article class="card span-2">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Installed network</p>
+                  <h2>Sites and support model</h2>
+                </div>
+              </div>
+              <div id="siteList" class="directory-list"></div>
+            </article>
+          </div>
+        </div>
+
+        <div id="atlasPanelRegions" class="atlas-panel">
+          <div class="atlas-grid">
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Regions</p>
+                  <h2>Configure geography</h2>
+                </div>
+              </div>
+              <form id="regionForm" class="smart-form inline-form">
+                <input id="regionName" type="text" placeholder="Add a region">
+                <button class="btn btn-primary" type="submit">Add region</button>
+              </form>
+            </article>
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Library</p>
+                  <h2>Available regions</h2>
+                </div>
+              </div>
+              <div id="regionLibrary" class="pill-library"></div>
+            </article>
+          </div>
+        </div>
+
+        <div id="atlasPanelSkills" class="atlas-panel">
+          <div class="atlas-grid">
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Skills</p>
+                  <h2>Extend the scoring library</h2>
+                </div>
+              </div>
+              <form id="skillForm" class="smart-form inline-form">
+                <input id="skillId" type="hidden">
+                <input id="skillName" type="text" placeholder="Add a skill code">
+                <button class="btn btn-primary" type="submit">Save skill</button>
+                <button id="skillResetBtn" class="btn btn-secondary" type="button">Clear form</button>
+              </form>
+            </article>
+            <article class="card">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Library</p>
+                  <h2>Active skills</h2>
+                </div>
+              </div>
+              <div id="skillLibrary" class="pill-library"></div>
+            </article>
+          </div>
+        </div>
+
+        <div id="atlasPanelTasks" class="atlas-panel">
+          <div class="atlas-grid">
+            <article class="card span-2">
+              <div class="card-head">
+                <div>
+                  <p class="section-tag">Task library</p>
+                  <h2>Create or edit tasks</h2>
+                </div>
+              </div>
+              <form id="taskCatalogForm" class="smart-form form-grid form-grid-5">
+                <input id="taskCatalogId" type="hidden">
+                <label><span>Title</span><input id="taskCatalogTitle" type="text" placeholder="Task title"></label>
+                <label><span>Site</span><select id="taskCatalogSite"></select></label>
+                <label>
+                  <span>Family</span>
+                  <select id="taskCatalogFamily">
+                    <option value="site_coverage">Site coverage</option>
+                    <option value="pm">Preventive maintenance</option>
+                    <option value="hotline_hw">Hotline HW</option>
+                    <option value="hotline_sw">Hotline SW</option>
+                    <option value="installation">Installation</option>
+                    <option value="same_day_onsite">Same day onsite</option>
+                    <option value="partner_escalation">Partner escalation</option>
+                    <option value="office">Office / Management</option>
+                  </select>
+                </label>
+                <label><span>Priority</span><select id="taskCatalogPriority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label>
+                <label><span>Skill</span><select id="taskCatalogSkill"></select></label>
+                <label><span>Duration</span><input id="taskCatalogDuration" type="number" min="15" step="15" value="180"></label>
+                <label><span>Window start</span><input id="taskCatalogStart" type="time" value="08:30"></label>
+                <label><span>Window end</span><input id="taskCatalogEnd" type="time" value="17:30"></label>
+                <label><span>SLA / note</span><input id="taskCatalogSla" type="text" placeholder="Support note or SLA"></label>
+                <label class="toggle-field"><span>Remote</span><input id="taskCatalogRemote" type="checkbox"></label>
+                <label>
+                  <span>Assignable to</span>
+                  <select id="taskCatalogEligibleRoles">
+                    <option value="[]">All field technicians</option>
+                    <option value='["FSE_HW","SENIOR_FSE_HW","OSE","OSE_NIGHT","TECHNICAL_LEADER"]'>HW team</option>
+                    <option value='["FSE_SW","SENIOR_FSE_SW","MIDDLEWARE_SW","TECHNICAL_LEADER"]'>SW / Middleware team</option>
+                    <option value='["SENIOR_FSE_HW","SENIOR_FSE_SW","TECHNICAL_LEADER"]'>Senior + Technical Leader</option>
+                    <option value='["TECHNICAL_LEADER"]'>Technical Leader only</option>
+                  </select>
+                </label>
+                <div class="form-actions span-4">
+                  <button class="btn btn-primary" type="submit">Save task</button>
+                  <button id="taskCatalogResetBtn" class="btn btn-secondary" type="button">Clear form</button>
                 </div>
               </form>
+            </article>
 
-              <div id="siteList" class="directory-list"></div>
-            </section>
-
-            <section class="panel panel-span-two">
-              <div class="section-header">
+            <article class="card span-2">
+              <div class="card-head">
                 <div>
-                  <p class="eyebrow">Atlas taxonomy</p>
-                  <h3>Regions and skills</h3>
+                  <p class="section-tag">Task inventory</p>
+                  <h2>All tasks in planner memory</h2>
+                </div>
+                <div class="inline-actions">
+                  <button id="taskSelectAllBtn" class="btn btn-inline" type="button">Select all</button>
+                  <button id="taskClearSelectionBtn" class="btn btn-inline" type="button">Clear selection</button>
+                  <button id="taskDeleteSelectedBtn" class="btn btn-inline" type="button">Delete selected</button>
                 </div>
               </div>
-
-              <div class="taxonomy-grid">
-                <form id="regionForm" class="taxonomy-form">
-                  <label>
-                    Add region
-                    <input id="regionName" type="text" placeholder="Example: Southwest" required>
-                  </label>
-                  <button type="submit" class="primary">Add region</button>
-                </form>
-                <form id="skillForm" class="taxonomy-form">
-                  <label>
-                    Add skill
-                    <input id="skillName" type="text" placeholder="Example: HOTLINE_SUPPORT" required>
-                  </label>
-                  <button type="submit" class="primary">Add skill</button>
-                </form>
-              </div>
-
-              <div class="taxonomy-columns">
-                <div>
-                  <h4>Regions</h4>
-                  <div id="regionLibrary" class="tag-cloud"></div>
-                </div>
-                <div>
-                  <h4>Skills</h4>
-                  <div id="skillLibrary" class="tag-cloud"></div>
-                </div>
-              </div>
-            </section>
+              <div id="taskCatalogList" class="directory-list"></div>
+            </article>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="view-panel" data-view-panel="pm">
-          <section class="panel">
-            <div class="pm-header">
-              <div>
-                <p class="eyebrow">Preventive maintenance</p>
-                <h3>Site PM progress</h3>
-                <p>Track PM activity completion by customer site and module family. Direct sites are preloaded and future sites can be added later.</p>
-              </div>
-              <label class="pm-filter">
-                Site
-                <select id="pmSiteFilter" aria-label="Select PM site"></select>
-              </label>
-            </div>
+      <section id="view-pm" class="view">
+        <div class="page-header">
+          <div>
+            <p class="eyebrow">Preventive maintenance</p>
+            <h1>Preventive Maintenance</h1>
+            <p class="page-copy">Keep the PM logic we already built, with a cleaner maintenance-first presentation.</p>
+          </div>
+        </div>
 
-            <div class="pm-layout">
-              <aside id="pmSiteSummary" class="pm-summary"></aside>
-              <section class="pm-detail">
-                <div id="pmModuleTabs" class="pm-tabs"></div>
-                <div id="pmActivityPanel" class="pm-activity-panel"></div>
-              </section>
+        <article class="card pm-shell">
+          <div class="card-head pm-head">
+            <div>
+              <p class="section-tag">Current maintenance cycle</p>
+              <h2 id="pmCycleTitle">Site PM progress</h2>
+              <p class="subtle" id="pmSiteSummary"></p>
             </div>
-          </section>
-        </section>
+            <label class="inline-filter">
+              <span>Site</span>
+              <select id="pmSiteFilter"></select>
+            </label>
+          </div>
+          <div class="pm-metrics" id="pmMetrics"></div>
+          <div id="pmRadarPanel" class="stack-list"></div>
+          <div id="pmModuleTabs" class="pm-module-tabs"></div>
+          <div id="pmActivityPanel" class="pm-activity-panel"></div>
+        </article>
+      </section>
+
+      <section id="view-notifications" class="view">
+        <div class="page-header">
+          <div>
+            <p class="eyebrow">Communications</p>
+            <h1>Notifications</h1>
+            <p class="page-copy">Every assignment, gap, overload, and PM signal the planner generated. Preview the email that would be sent.</p>
+          </div>
+        </div>
+        <div class="filter-chip-row" id="notificationFilters"></div>
+        <div id="notificationList" class="notification-list"></div>
       </section>
     </main>
 
-    <script src="pm-data.js?v=20260421-4"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=20260421-4"></script>
-  </body>
+    <aside id="settingsDrawer" class="settings-drawer" aria-hidden="true">
+      <div class="settings-head">
+        <h2>Settings</h2>
+        <button id="settingsCloseBtn" class="icon-button close-button" aria-label="Close settings">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="settings-body">
+        <label class="settings-toggle">
+          <div>
+            <strong>Show real names</strong>
+            <p>Display real technicians and sites. Off uses anonymized labels.</p>
+          </div>
+          <input id="settingShowRealNames" type="checkbox" checked>
+        </label>
+
+        <label class="settings-group">
+          <span>Travel mode strategy</span>
+          <p>How the planner chooses between car and flight for estimates.</p>
+          <select id="settingTravelStrategy">
+            <option value="ny-auto-air">Auto (NY area = car, else air)</option>
+            <option value="always-auto">Always auto</option>
+            <option value="distance-hybrid">Hybrid by distance</option>
+          </select>
+        </label>
+
+        <label class="settings-group">
+          <span>Max hours per technician / day</span>
+          <p>Hard cap used by the scheduler.</p>
+          <input id="settingMaxHours" type="number" min="1" max="24" value="8">
+        </label>
+
+        <label class="settings-toggle">
+          <div>
+            <strong>Dark theme</strong>
+            <p>Switch the workspace to a dark visual mode.</p>
+          </div>
+          <input id="settingDarkTheme" type="checkbox">
+        </label>
+
+        <button id="clearOverridesBtn" class="btn btn-secondary block-button" type="button">Clear manual overrides</button>
+        <p class="settings-note">Field Ops Planner v4 preview. Data persists in your browser only. No backend calls.</p>
+      </div>
+    </aside>
+
+    <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+
+    <dialog id="emailPreviewDialog" class="email-dialog">
+      <form method="dialog" class="email-dialog-card">
+        <div class="email-dialog-head">
+          <div>
+            <p class="section-tag">Email preview</p>
+            <h2 id="emailPreviewTitle">Notification</h2>
+          </div>
+          <button class="icon-button close-button" aria-label="Close preview">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <pre id="emailPreviewBody" class="email-preview"></pre>
+      </form>
+    </dialog>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="data.js?v=20260423-6"></script>
+  <script src="pm-data.js?v=20260423-6"></script>
+  <script src="app.js?v=20260423-6"></script>
+</body>
 </html>

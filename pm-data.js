@@ -389,7 +389,7 @@ window.pmModuleTemplates = [
         "slot": "Module",
         "partNumber": "FLX-217-40-00",
         "component": "Load system",
-        "operation": "Return the ZEUS module to Hamilton before it exceeds\n12’000’000’000. This value is equivalent to 1 million full stroke pipetting cycles (aspiration and dispensation).",
+        "operation": "Return the ZEUS module to Hamilton before it exceeds\n12â000â000â000. This value is equivalent to 1 million full stroke pipetting cycles (aspiration and dispensation).",
         "tools": "",
         "materials": "",
         "minutes": 60
@@ -443,7 +443,7 @@ window.pmModuleTemplates = [
         "slot": "Module",
         "partNumber": "FLX-217-40-00",
         "component": "Load system",
-        "operation": "Zeus pipetting module: change the CO-RE tip adaptor after 500’000 tip picking cycles",
+        "operation": "Zeus pipetting module: change the CO-RE tip adaptor after 500â000 tip picking cycles",
         "tools": "",
         "materials": "",
         "minutes": 10
@@ -4633,12 +4633,13 @@ window.pmModuleTemplates = [
 
 window.sitePmPlans = [
   {
-    "siteId": "direct-client-ny-01",
-    "site": "Direct Client NY-01",
-    "city": "NY Metro Area",
-    "owner": "OSE Northeast-03 / OSE Northeast-02",
+    "siteId": "mskcc",
+    "site": "MSKCC",
+    "city": "Manhattan, NY",
+    "owner": "Donald Kong",
     "contract": "Direct - H24, anomaly L1/L2/L3, onsite presence",
-    "dueDate": "2026-05-15",
+    "commissionedAt": "2025-12-10",
+    "dueDate": "2026-07-15",
     "modules": [
       "Smart Bridge Module",
       "Sealer Module",
@@ -4649,12 +4650,13 @@ window.sitePmPlans = [
     ]
   },
   {
-    "siteId": "direct-client-ny-02",
-    "site": "Direct Client NY-02",
-    "city": "NY Metro Area",
-    "owner": "Night OSE Northeast-01 night / OSE Northeast-03 or OSE Northeast-02 day",
+    "siteId": "sonic-sunrise",
+    "site": "Sonic Sunrise",
+    "city": "Long Island, NY",
+    "owner": "Steve Giakoumakis night / Jaypee Mendoza day",
     "contract": "Direct - H24, anomaly L1/L2/L3, onsite presence",
-    "dueDate": "2026-05-20",
+    "commissionedAt": "2024-10-05",
+    "dueDate": "2026-05-05",
     "modules": [
       "Smart Bridge Module",
       "Aliquoter Module",
@@ -4664,12 +4666,13 @@ window.sitePmPlans = [
     ]
   },
   {
-    "siteId": "direct-client-midwest-01",
-    "site": "Direct Client Lab Network",
-    "city": "Midwest Site",
-    "owner": "OSE Midwest-01",
+    "siteId": "labcorp-indianapolis",
+    "site": "Labcorp",
+    "city": "Indianapolis, IN",
+    "owner": "Anthony Warlick",
     "contract": "Direct - dedicated onsite ownership",
-    "dueDate": "2026-05-10",
+    "commissionedAt": "2025-06-20",
+    "dueDate": "2026-06-20",
     "modules": [
       "Input/Output Module X Open Access",
       "Storage and Retrieval Module",
@@ -4679,11 +4682,12 @@ window.sitePmPlans = [
     ]
   },
   {
-    "siteId": "direct-client-northeast-01",
-    "site": "Direct Client Lab Network",
-    "city": "Northeast Site",
-    "owner": "OSE Northeast-04",
+    "siteId": "labcorp-holyoke",
+    "site": "Labcorp",
+    "city": "Holyoke, MA",
+    "owner": "Kyle Foley",
     "contract": "Direct - dedicated onsite ownership",
+    "commissionedAt": "2024-11-12",
     "dueDate": "2026-05-12",
     "modules": [
       "Alinity ci-series IM",
@@ -4693,12 +4697,13 @@ window.sitePmPlans = [
     ]
   },
   {
-    "siteId": "direct-client-ma-01",
-    "site": "Direct Client MA-01",
-    "city": "Northeast Site",
-    "owner": "OSE Northeast-01",
+    "siteId": "boston-childrens",
+    "site": "Boston Children's Hospital",
+    "city": "Boston, MA",
+    "owner": "Angelo Guevara",
     "contract": "Direct - dedicated onsite ownership",
-    "dueDate": "2026-05-18",
+    "commissionedAt": "2026-03-18",
+    "dueDate": "2026-09-18",
     "modules": [
       "Liquid Handling Robot for BloodBanks",
       "Aliquoter Module",
@@ -4707,28 +4712,28 @@ window.sitePmPlans = [
     ]
   },
   {
-    "siteId": "partner-west-01",
-    "site": "Partner CA-01",
-    "city": "West Remote Site",
+    "siteId": "hologic-san-diego",
+    "site": "Hologic Innovation Center",
+    "city": "San Diego, CA",
     "owner": "Senior FSE / Middleware queue",
     "contract": "Partner - remote hotline and L2/L3 escalation",
     "dueDate": "",
     "modules": []
   },
   {
-    "siteId": "partner-southeast-01",
-    "site": "Partner TN-01",
-    "city": "Southeast Partner Site",
-    "owner": "Partner Service Provider L1 / internal L2-L3",
+    "siteId": "williamson-medical",
+    "site": "Williamson Medical Center",
+    "city": "Nashville, TN",
+    "owner": "Quidel Ortho L1 / internal L2-L3",
     "contract": "Partner - escalation via Salesforce",
     "dueDate": "",
     "modules": []
   },
   {
-    "siteId": "partner-west-02",
-    "site": "Partner CA-02",
-    "city": "West Partner Site",
-    "owner": "Partner Service Provider L1 / internal L2-L3",
+    "siteId": "hoag-hospital",
+    "site": "Hoag Hospital",
+    "city": "Irvine, CA",
+    "owner": "Quidel Ortho L1 / internal L2-L3",
     "contract": "Partner - escalation via Salesforce",
     "dueDate": "",
     "modules": []

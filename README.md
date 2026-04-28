@@ -62,19 +62,22 @@ No build step is required. The demo uses plain HTML, CSS, and JavaScript so it c
 
 ## Current assignment logic
 
-The prototype scores each task against each resource using:
+The prototype now uses an operations-first multi-pass dispatcher instead of a generic one-shot score.
 
-- Required skill match
-- Hard eligibility for dedicated sites
-- Preferred resources for shared sites
-- Resource classification
-- Resource region vs task region
-- Estimated travel time from home base
-- Current assigned workload
-- Task priority
-- Daily work and travel limits
+Assignment pass order:
 
-Tasks that cannot satisfy the current constraints remain uncovered.
+1. Site coverage day/night owner anchors
+2. Hotline HW and Hotline SW
+3. Preventive maintenance
+4. Installation / upgrade
+5. Partner remote support
+6. Direct remote support
+7. L3 onsite and persistent fault support
+8. OSE backup / residual work
+
+The score still considers required skill, hard eligibility, preferred resources, region, travel, workload, priority, and daily limits. It now also considers role family, default work mode, primary support domain, OSE protection, hotline anchoring, deployment status, and remote-vs-onsite operating mode.
+
+When no clean assignment exists, the planner tries a least-bad forced assignment with a warning before leaving the task uncovered. This keeps the demo closer to real Field Ops behavior: humans still review overload, skill stretch, or cross-region escalation, but the plan does not simply give up like a damp spreadsheet.
 
 ## Weekly intake model
 
